@@ -1,0 +1,14 @@
+# Maven build output
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# Derby database (each person builds their own)
+LibraryDB/
+derby.log
+
+# NetBeans personal settings
+nbproject/private/
+nbactions.xml
