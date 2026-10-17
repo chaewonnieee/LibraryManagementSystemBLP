@@ -1,13 +1,8 @@
 package com.mycompany.librarymanagementsystemblp.ui;
 
 import com.mycompany.librarymanagementsystemblp.model.User;
-import java.awt.BorderLayout;
-import java.awt.Font;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
+import java.awt.*;
+import javax.swing.*;
 
 public class DashboardFrame extends JFrame {
 
@@ -23,12 +18,26 @@ public class DashboardFrame extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(800, 500);
         setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
 
+        // Welcome message at the top
         JLabel lblWelcome = new JLabel(
             "Welcome, " + currentUser.getFullName() + " (" + currentUser.getRole() + ")",
             SwingConstants.CENTER);
         lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblWelcome.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
+        add(lblWelcome, BorderLayout.NORTH);
 
+        // Module buttons in the middle
+        JButton btnBooks = new JButton("Books");
+        btnBooks.setPreferredSize(new Dimension(150, 60));
+        btnBooks.addActionListener(e -> new BookFrame().setVisible(true));
+
+        JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        menuPanel.add(btnBooks);
+        add(menuPanel, BorderLayout.CENTER);
+
+        // Logout at the bottom
         JButton btnLogout = new JButton("Logout");
         btnLogout.addActionListener(e -> {
             dispose();
@@ -37,9 +46,6 @@ public class DashboardFrame extends JFrame {
 
         JPanel bottom = new JPanel();
         bottom.add(btnLogout);
-
-        setLayout(new BorderLayout());
-        add(lblWelcome, BorderLayout.CENTER);
         add(bottom, BorderLayout.SOUTH);
     }
 }

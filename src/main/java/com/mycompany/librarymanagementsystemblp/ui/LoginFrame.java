@@ -2,20 +2,9 @@ package com.mycompany.librarymanagementsystemblp.ui;
 
 import com.mycompany.librarymanagementsystemblp.dao.UserDAO;
 import com.mycompany.librarymanagementsystemblp.model.User;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.*;
 import java.sql.SQLException;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 
 public class LoginFrame extends JFrame {
 
