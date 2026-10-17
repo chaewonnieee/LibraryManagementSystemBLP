@@ -20,7 +20,6 @@ public class DashboardFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Welcome message at the top
         JLabel lblWelcome = new JLabel(
             "Welcome, " + currentUser.getFullName() + " (" + currentUser.getRole() + ")",
             SwingConstants.CENTER);
@@ -28,16 +27,24 @@ public class DashboardFrame extends JFrame {
         lblWelcome.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
         add(lblWelcome, BorderLayout.NORTH);
 
-        // Module buttons in the middle
         JButton btnBooks = new JButton("Books");
         btnBooks.setPreferredSize(new Dimension(150, 60));
         btnBooks.addActionListener(e -> new BookFrame().setVisible(true));
 
+        JButton btnCategories = new JButton("Categories");
+        btnCategories.setPreferredSize(new Dimension(150, 60));
+        btnCategories.addActionListener(e -> new CategoryFrame().setVisible(true));
+
+        JButton btnMembers = new JButton("Members");
+        btnMembers.setPreferredSize(new Dimension(150, 60));
+        btnMembers.addActionListener(e -> new MemberFrame().setVisible(true));
+
         JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
         menuPanel.add(btnBooks);
+        menuPanel.add(btnCategories);
+        menuPanel.add(btnMembers);
         add(menuPanel, BorderLayout.CENTER);
 
-        // Logout at the bottom
         JButton btnLogout = new JButton("Logout");
         btnLogout.addActionListener(e -> {
             dispose();
