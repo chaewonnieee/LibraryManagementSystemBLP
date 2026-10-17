@@ -108,6 +108,7 @@ public class MemberFrame extends JFrame {
             txtSearch.setText("");
             refreshTable();
         });
+        BackBar.install(this);   // Back button bar at the top of the window
     }
 
     private void addField(JPanel panel, int row, int col, String label, JComponent comp) {
