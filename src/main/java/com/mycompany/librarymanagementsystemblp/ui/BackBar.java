@@ -8,8 +8,10 @@ import javax.swing.*;
 import javax.swing.plaf.basic.BasicButtonUI;
 
 /**
- * Adds a TUP-maroon "Back" button bar to the top of a window.
+ * Gives a module window the Lumora look and a TUP-maroon "Back" button.
  * Usage (last line of a frame's initComponents):   BackBar.install(this);
+ * - styles everything already in the window (see Theme.styleTree)
+ * - adds a navy header with the Back button, the window title and the logo
  * Clicking Back closes that window, which returns the user to the Dashboard.
  */
 public final class BackBar {
@@ -21,13 +23,42 @@ public final class BackBar {
     private BackBar() {
     }
 
-    // Wraps the window's existing content in a panel that has the Back bar on top
     public static void install(JFrame frame) {
         Container existingContent = frame.getContentPane();
 
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
-        bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(205, 205, 205)));
-        bar.add(createBackButton(frame::dispose));
+        // 1) theme everything that is already in the window
+        Theme.styleTree(existingContent);
+        if (existingContent instanceof JComponent) {
+            ((JComponent) existingContent).setBorder(BorderFactory.createEmptyBorder(14, 18, 16, 18));
+        }
+        Theme.applyWindowIcon(frame);
+
+        // 2) navy header: Back button, title, logo
+        JLabel lblTitle = new JLabel(String.valueOf(frame.getTitle()).toUpperCase(), SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblTitle.setForeground(Color.WHITE);
+
+        JLabel lblLogo = new JLabel();
+        ImageIcon logo = Theme.loadLogo(40);
+        if (logo != null) {
+            lblLogo.setIcon(logo);
+        }
+
+        JButton btnBack = createBackButton(frame::dispose);
+        btnBack.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 90)),
+            BorderFactory.createEmptyBorder(5, 15, 5, 15)));
+
+        // the logo gets the same width as the Back button, so the title stays centered
+        lblLogo.setHorizontalAlignment(SwingConstants.RIGHT);
+        lblLogo.setPreferredSize(new Dimension(btnBack.getPreferredSize().width, 40));
+
+        JPanel bar = new JPanel(new BorderLayout(14, 0));
+        bar.setBackground(Theme.NAVY);
+        bar.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+        bar.add(btnBack, BorderLayout.WEST);
+        bar.add(lblTitle, BorderLayout.CENTER);
+        bar.add(lblLogo, BorderLayout.EAST);
 
         JPanel root = new JPanel(new BorderLayout());
         root.add(bar, BorderLayout.NORTH);
@@ -37,6 +68,7 @@ public final class BackBar {
 
     public static JButton createBackButton(Runnable action) {
         JButton btn = new JButton("\u2190  Back");
+        btn.putClientProperty(Theme.SKIP, Boolean.TRUE);
         btn.setUI(new BasicButtonUI());          // flat, solid color on every look and feel
         btn.setOpaque(true);
         btn.setContentAreaFilled(true);
