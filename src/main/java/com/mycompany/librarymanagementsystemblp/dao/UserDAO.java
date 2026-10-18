@@ -2,6 +2,7 @@ package com.mycompany.librarymanagementsystemblp.dao;
 
 import com.mycompany.librarymanagementsystemblp.database.DatabaseConnection;
 import com.mycompany.librarymanagementsystemblp.model.User;
+import com.mycompany.librarymanagementsystemblp.database.PasswordUtil;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,7 +32,7 @@ public class UserDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, username);
-            ps.setString(2, password);
+            ps.setString(2, PasswordUtil.hash(password));       // CHANGED: hash the typed password before comparing
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -51,7 +52,7 @@ public class UserDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, u.getUsername());
-            ps.setString(2, u.getPassword());
+            ps.setString(2, PasswordUtil.hash(u.getPassword())); // CHANGED: save the hash, not the plain password
             ps.setString(3, u.getFullName());
             ps.setString(4, u.getRole());
             ps.setString(5, u.getStatus());
@@ -115,7 +116,7 @@ public class UserDAO {
             ps.setString(i++, u.getRole());
             ps.setString(i++, u.getStatus());
             if (changePassword) {
-                ps.setString(i++, u.getPassword());
+                ps.setString(i++, PasswordUtil.hash(u.getPassword())); // CHANGED: hash the new password before saving
             }
             ps.setInt(i, u.getUserId());
             ps.executeUpdate();

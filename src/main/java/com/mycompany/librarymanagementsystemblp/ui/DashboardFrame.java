@@ -195,7 +195,7 @@ public class DashboardFrame extends JFrame {
     }
 
     private JPanel buildFooter() {
-        JLabel slogan = new JLabel("WHERE KNOWLEDGE FINDS IT\u2019S HOME", SwingConstants.CENTER);
+        JLabel slogan = new JLabel("WHERE KNOWLEDGE FINDS ITS HOME", SwingConstants.CENTER);
         slogan.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         slogan.setForeground(Theme.NAVY);
 

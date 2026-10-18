@@ -93,7 +93,7 @@ public class LoginFrame extends JFrame {
         lblSystem.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         lblSystem.setForeground(Theme.NAVY);
 
-        JLabel lblSlogan = new JLabel("WHERE KNOWLEDGE FINDS IT\u2019S HOME");
+        JLabel lblSlogan = new JLabel("WHERE KNOWLEDGE FINDS ITS HOME");
         lblSlogan.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         lblSlogan.setForeground(Theme.NAVY);
 

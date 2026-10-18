@@ -106,7 +106,7 @@ public class DatabaseSetup {
                         + "VALUES (?, ?, ?, ?)";
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     ps.setString(1, "admin");
-                    ps.setString(2, "admin123");
+                    ps.setString(2, PasswordUtil.hash("admin123"));
                     ps.setString(3, "System Administrator");
                     ps.setString(4, "Administrator");
                     ps.executeUpdate();
