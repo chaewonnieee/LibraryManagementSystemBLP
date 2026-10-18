@@ -3,6 +3,8 @@ package com.mycompany.librarymanagementsystemblp.ui;
 import com.mycompany.librarymanagementsystemblp.dao.FineDAO;
 import com.mycompany.librarymanagementsystemblp.model.Fine;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,6 +117,15 @@ public class FineFrame extends JFrame {
             chkUnpaidOnly.setSelected(false);
             refreshTable();
         });
+        BackBar.install(this);   // Lumora theme + Back button bar at the top of the window
+
+        // Reload whenever the user comes back to this window (a book may have been returned late)
+        addWindowFocusListener(new WindowAdapter() {
+            @Override
+            public void windowGainedFocus(WindowEvent e) {
+                loadFines(false);
+            }
+        });
     }
 
     private void addField(JPanel panel, int row, int col, String label, JComponent comp) {
@@ -133,6 +144,13 @@ public class FineFrame extends JFrame {
     }
 
     private void refreshTable() {
+        loadFines(true);
+    }
+
+    // showMessages is false for the automatic reload, so no dialog can pop up by itself.
+    // The selected fine stays selected after the reload.
+    private void loadFines(boolean showMessages) {
+        int keepId = selectedFine == null ? -1 : selectedFine.getFineId();
         try {
             String keyword = txtSearch.getText().trim();
             currentFines = fineDAO.getFines(keyword, chkUnpaidOnly.isSelected());
@@ -146,11 +164,22 @@ public class FineFrame extends JFrame {
             }
             lblTotal.setText("Total unpaid: PHP "
                 + fineDAO.getTotalUnpaid().setScale(2).toPlainString());
-            if (currentFines.isEmpty() && !keyword.isEmpty()) {
+
+            if (keepId > 0) {
+                for (int i = 0; i < currentFines.size(); i++) {
+                    if (currentFines.get(i).getFineId() == keepId) {
+                        table.setRowSelectionInterval(i, i);
+                        break;
+                    }
+                }
+            }
+            if (showMessages && currentFines.isEmpty() && !keyword.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "No matching records found.");
             }
         } catch (SQLException ex) {
-            handleSqlError(ex);
+            if (showMessages) {
+                handleSqlError(ex);
+            }
         }
     }
 

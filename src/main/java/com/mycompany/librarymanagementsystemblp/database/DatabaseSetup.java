@@ -90,6 +90,7 @@ public class DatabaseSetup {
 
             insertDefaultAdmin(conn);
             insertDefaultCategories(conn);
+            resyncIdentities(conn);
             System.out.println("Database ready!");
 
         } catch (SQLException e) {
@@ -134,6 +135,35 @@ public class DatabaseSetup {
                         ps.executeUpdate();
                     }
                 }
+            }
+        }
+    }
+
+    // Derby reserves ID numbers in blocks of 100. If the program was closed without a clean
+    // shutdown (for example the Stop button), the next new record can jump to 101.
+    // On every start, set each ID counter back to "highest existing ID + 1".
+    private static void resyncIdentities(Connection conn) throws SQLException {
+        String[][] idColumns = {
+            {"USERS", "user_id"},
+            {"MEMBERS", "member_id"},
+            {"CATEGORIES", "category_id"},
+            {"BOOKS", "book_id"},
+            {"BORROWINGS", "borrow_id"},
+            {"BORROWING_DETAILS", "detail_id"},
+            {"FINES", "fine_id"},
+            {"RESERVATIONS", "reservation_id"}
+        };
+
+        for (String[] tc : idColumns) {
+            int next;
+            try (Statement st = conn.createStatement();
+                 ResultSet rs = st.executeQuery("SELECT MAX(" + tc[1] + ") FROM " + tc[0])) {
+                rs.next();
+                next = rs.getInt(1) + 1;      // an empty table gives 0, so it restarts at 1
+            }
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate("ALTER TABLE " + tc[0] + " ALTER COLUMN " + tc[1]
+                               + " RESTART WITH " + next);
             }
         }
     }

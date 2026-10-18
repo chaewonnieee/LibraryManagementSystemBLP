@@ -3,6 +3,8 @@ package com.mycompany.librarymanagementsystemblp.ui;
 import com.mycompany.librarymanagementsystemblp.dao.ReportDAO;
 import com.mycompany.librarymanagementsystemblp.dao.ReportDAO.Report;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.sql.SQLException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -53,9 +55,23 @@ public class ReportFrame extends JFrame {
         btnGenerate.addActionListener(e -> generateReport());
         cmbReport.addActionListener(e -> generateReport());
         BackBar.install(this);   // Back button bar at the top of the window
+
+        // Re-run the report whenever the user comes back to this window,
+        // so it always matches what was just changed in Fines, Borrow / Return, etc.
+        addWindowFocusListener(new WindowAdapter() {
+            @Override
+            public void windowGainedFocus(WindowEvent e) {
+                generateReport(false);
+            }
+        });
     }
 
     private void generateReport() {
+        generateReport(true);
+    }
+
+    // showErrors is false for the automatic refresh, so an error cannot pop up again and again
+    private void generateReport(boolean showErrors) {
         try {
             Report report;
             switch (cmbReport.getSelectedIndex()) {
@@ -80,8 +96,10 @@ public class ReportFrame extends JFrame {
             lblCount.setText(report.rows.size() + " record(s) found.");
 
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+            if (showErrors) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 }
