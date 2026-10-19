@@ -89,7 +89,7 @@ public class ReservationFrame extends JFrame {
         searchPanel.add(btnShowAll);
 
         tableModel = new DefaultTableModel(
-            new String[]{"ID", "Member", "Book", "Date Reserved", "Status"}, 0) {
+                new String[]{"ID", "Member", "Book", "Date Reserved", "Status"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -137,7 +137,6 @@ public class ReservationFrame extends JFrame {
     }
 
     // ---------- Loading data ----------
-
     private void loadMembersAndBooks() {
         try {
             cmbMember.removeAllItems();
@@ -148,7 +147,9 @@ public class ReservationFrame extends JFrame {
             }
             cmbBook.removeAllItems();
             for (Book b : bookDAO.getAllBooks()) {
-                cmbBook.addItem(b);
+                if (b.getAvailableCopies() == 0) {      // only add books with no copies on the shelf
+                    cmbBook.addItem(b);
+                }
             }
         } catch (SQLException ex) {
             handleSqlError(ex);
@@ -191,23 +192,30 @@ public class ReservationFrame extends JFrame {
                 break;
             }
         }
+
+        cmbBook.setSelectedIndex(-1);                   // NEW: start with no book selected
         for (int i = 0; i < cmbBook.getItemCount(); i++) {
             if (cmbBook.getItemAt(i).getBookId() == selectedReservation.getBookId()) {
-                cmbBook.setSelectedIndex(i);
+                cmbBook.setSelectedIndex(i);            // book is in the list, so select it
                 break;
             }
         }
     }
 
     // ---------- Button actions ----------
-
     private void reserveBook() {
         Member member = (Member) cmbMember.getSelectedItem();
         Book book = (Book) cmbBook.getSelectedItem();
-        if (member == null || book == null) {
+        if (book == null) {                             // CHANGED: separate message when no book can be reserved
             JOptionPane.showMessageDialog(this,
-                "Please select both a member and a book.",
-                "Missing Information", JOptionPane.WARNING_MESSAGE);
+                    "No books are available to reserve. Books can only be reserved when no copies are on the shelf.",
+                    "Nothing to Reserve", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        if (member == null) {                           // CHANGED: separate message when no member is selected
+            JOptionPane.showMessageDialog(this,
+                    "Please select a member.",
+                    "Missing Information", JOptionPane.WARNING_MESSAGE);
             return;
         }
         try {
@@ -219,20 +227,20 @@ public class ReservationFrame extends JFrame {
             handleSqlError(ex);
         } catch (IllegalStateException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(),
-                "Cannot Reserve", JOptionPane.WARNING_MESSAGE);
+                    "Cannot Reserve", JOptionPane.WARNING_MESSAGE);
         }
     }
 
     private void changeStatus(String newStatus, String doneText) {
         if (selectedReservation == null) {
             JOptionPane.showMessageDialog(this,
-                "Please select a reservation from the table first.",
-                "No Selection", JOptionPane.WARNING_MESSAGE);
+                    "Please select a reservation from the table first.",
+                    "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
         int choice = JOptionPane.showConfirmDialog(this,
-            "Are you sure this reservation should be " + doneText + "?",
-            "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                "Are you sure this reservation should be " + doneText + "?",
+                "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (choice != JOptionPane.YES_OPTION) {
             return;
         }
@@ -245,7 +253,7 @@ public class ReservationFrame extends JFrame {
             handleSqlError(ex);
         } catch (IllegalStateException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(),
-                "Cannot Update", JOptionPane.WARNING_MESSAGE);
+                    "Cannot Update", JOptionPane.WARNING_MESSAGE);
         }
     }
 
@@ -264,6 +272,6 @@ public class ReservationFrame extends JFrame {
 
     private void handleSqlError(SQLException ex) {
         JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
-            "Error", JOptionPane.ERROR_MESSAGE);
+                "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
