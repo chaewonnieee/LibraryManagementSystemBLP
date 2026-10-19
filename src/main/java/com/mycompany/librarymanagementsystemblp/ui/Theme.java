@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.plaf.basic.BasicButtonUI;
 
 public final class Theme {
@@ -266,5 +267,39 @@ public final class Theme {
         header.setForeground(Color.WHITE);
         header.setFont(new Font("Segoe UI", Font.BOLD, 12));
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 32));
+
+        // Header text and cell text use the same left alignment and padding,
+        // so every column header lines up with the values underneath it.
+        final Border pad = BorderFactory.createEmptyBorder(0, 8, 0, 8);
+        header.setDefaultRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(t, value, false, false, row, column);
+                setBackground(NAVY);
+                setForeground(Color.WHITE);
+                setFont(new Font("Segoe UI", Font.BOLD, 12));
+                setHorizontalAlignment(SwingConstants.LEFT);
+                setBorder(pad);
+                return this;
+            }
+        });
+        // Replace the stock renderers (numbers are right-aligned by default) with left-aligned padded ones
+        javax.swing.table.DefaultTableCellRenderer cells = new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(t, value, isSelected, false, row, column);
+                setHorizontalAlignment(SwingConstants.LEFT);
+                setBorder(pad);
+                return this;
+            }
+        };
+        for (Class<?> type : new Class<?>[]{Object.class, Number.class, Integer.class,
+                                             Long.class, Double.class, Boolean.class}) {
+            if (table.getDefaultRenderer(type) instanceof javax.swing.plaf.UIResource) {
+                table.setDefaultRenderer(type, cells);
+            }
+        }
     }
 }

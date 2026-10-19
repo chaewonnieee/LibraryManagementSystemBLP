@@ -3,8 +3,6 @@ package com.mycompany.librarymanagementsystemblp.ui;
 import com.mycompany.librarymanagementsystemblp.dao.ReportDAO;
 import com.mycompany.librarymanagementsystemblp.dao.ReportDAO.Report;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.sql.SQLException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -23,12 +21,12 @@ public class ReportFrame extends JFrame {
     private final ReportDAO reportDAO = new ReportDAO();
 
     private final JComboBox<String> cmbReport = new JComboBox<>(REPORT_NAMES);
-    private final JLabel lblCount = new JLabel(" ");
+    private final JLabel lblCount = new JLabel("Choose a report, then click GENERATE.");
+    private final JButton btnExport = new JButton("EXPORT CSV");
     private final JTable table = new JTable();
 
     public ReportFrame() {
         initComponents();
-        generateReport();
     }
 
     private void initComponents() {
@@ -44,6 +42,8 @@ public class ReportFrame extends JFrame {
         top.add(new JLabel("Report:"));
         top.add(cmbReport);
         top.add(btnGenerate);
+        top.add(btnExport);
+        btnExport.setEnabled(false);
         add(top, BorderLayout.NORTH);
 
         add(new JScrollPane(table), BorderLayout.CENTER);
@@ -52,26 +52,20 @@ public class ReportFrame extends JFrame {
         bottom.add(lblCount);
         add(bottom, BorderLayout.SOUTH);
 
+        // The report only runs when GENERATE is clicked (changing the dropdown clears the old result)
         btnGenerate.addActionListener(e -> generateReport());
-        cmbReport.addActionListener(e -> generateReport());
+        btnExport.addActionListener(e -> exportCsv());
+        cmbReport.addActionListener(e -> clearResult());
         BackBar.install(this);   // Back button bar at the top of the window
+    }
 
-        // Re-run the report whenever the user comes back to this window,
-        // so it always matches what was just changed in Fines, Borrow / Return, etc.
-        addWindowFocusListener(new WindowAdapter() {
-            @Override
-            public void windowGainedFocus(WindowEvent e) {
-                generateReport(false);
-            }
-        });
+    private void clearResult() {
+        table.setModel(new DefaultTableModel());
+        lblCount.setText("Choose a report, then click GENERATE.");
+        btnExport.setEnabled(false);
     }
 
     private void generateReport() {
-        generateReport(true);
-    }
-
-    // showErrors is false for the automatic refresh, so an error cannot pop up again and again
-    private void generateReport(boolean showErrors) {
         try {
             Report report;
             switch (cmbReport.getSelectedIndex()) {
@@ -93,13 +87,47 @@ public class ReportFrame extends JFrame {
                 model.addRow(row);
             }
             table.setModel(model);
-            lblCount.setText(report.rows.size() + " record(s) found.");
+            lblCount.setText(report.rows.size() + " record(s) found.  Generated "
+                + java.time.LocalTime.now().withNano(0) + ".");
+            btnExport.setEnabled(!report.rows.isEmpty());
 
         } catch (SQLException ex) {
-            if (showErrors) {
-                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            }
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    // Saves the report currently shown in the table as a CSV file (opens in Excel)
+    private void exportCsv() {
+        JFileChooser chooser = new JFileChooser();
+        String name = cmbReport.getSelectedItem().toString().replace(' ', '_')
+                    + "_" + java.time.LocalDate.now() + ".csv";
+        chooser.setSelectedFile(new java.io.File(name));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        try (java.io.PrintWriter out = new java.io.PrintWriter(chooser.getSelectedFile(), "UTF-8")) {
+            DefaultTableModel m = (DefaultTableModel) table.getModel();
+            StringBuilder sb = new StringBuilder();
+            for (int c = 0; c < m.getColumnCount(); c++) {
+                sb.append(c > 0 ? "," : "").append(csv(m.getColumnName(c)));
+            }
+            out.println(sb);
+            for (int r = 0; r < m.getRowCount(); r++) {
+                sb.setLength(0);
+                for (int c = 0; c < m.getColumnCount(); c++) {
+                    sb.append(c > 0 ? "," : "").append(csv(String.valueOf(m.getValueAt(r, c))));
+                }
+                out.println(sb);
+            }
+            JOptionPane.showMessageDialog(this, "Report saved to:\n" + chooser.getSelectedFile());
+        } catch (java.io.IOException ex) {
+            JOptionPane.showMessageDialog(this, "Could not save file: " + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static String csv(String v) {
+        return "\"" + v.replace("\"", "\"\"") + "\"";
     }
 }

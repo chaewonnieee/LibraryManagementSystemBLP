@@ -167,18 +167,18 @@ public class DashboardFrame extends JFrame {
         // Modules
         JPanel grid = new JPanel(new GridLayout(0, 4, 16, 16));
         grid.setOpaque(false);
-        grid.add(moduleButton("Books", false, () -> new BookFrame().setVisible(true)));
-        grid.add(moduleButton("Categories", false, () -> new CategoryFrame().setVisible(true)));
-        grid.add(moduleButton("Members", false, () -> new MemberFrame().setVisible(true)));
+        grid.add(moduleButton("Books", false, () -> openModule(new BookFrame())));
+        grid.add(moduleButton("Categories", false, () -> openModule(new CategoryFrame())));
+        grid.add(moduleButton("Members", false, () -> openModule(new MemberFrame())));
         grid.add(moduleButton("Borrow / Return", false,
-            () -> new BorrowingFrame(currentUser).setVisible(true)));
-        grid.add(moduleButton("Reservations", false, () -> new ReservationFrame().setVisible(true)));
-        grid.add(moduleButton("Fines", false, () -> new FineFrame().setVisible(true)));
-        grid.add(moduleButton("Reports", false, () -> new ReportFrame().setVisible(true)));
+            () -> openModule(new BorrowingFrame(currentUser))));
+        grid.add(moduleButton("Reservations", false, () -> openModule(new ReservationFrame())));
+        grid.add(moduleButton("Fines", false, () -> openModule(new FineFrame())));
+        grid.add(moduleButton("Reports", false, () -> openModule(new ReportFrame())));
 
         // Only administrators can manage system users
         if ("Administrator".equals(currentUser.getRole())) {
-            grid.add(moduleButton("Users", true, () -> new UserFrame(currentUser).setVisible(true)));
+            grid.add(moduleButton("Users", true, () -> openModule(new UserFrame(currentUser))));
         }
 
         JPanel gridHolder = new JPanel(new BorderLayout());   // keeps the buttons from stretching too tall
@@ -225,6 +225,22 @@ public class DashboardFrame extends JFrame {
         btn.setPreferredSize(new Dimension(150, 92));
         btn.addActionListener(e -> action.run());
         return btn;
+    }
+
+    // Shows one module at a time: the dashboard hides while a module is open
+    // and comes back when that module is closed (Back button or the window's X).
+    private void openModule(JFrame module) {
+        module.setLocationRelativeTo(this);
+        module.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                setVisible(true);
+                toFront();
+                loadStats();
+            }
+        });
+        setVisible(false);
+        module.setVisible(true);
     }
 
     private void logout() {

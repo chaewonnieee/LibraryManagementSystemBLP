@@ -108,8 +108,10 @@ public class BorrowingFrame extends JFrame {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object value,
                     boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(
-                    t, value, isSelected, hasFocus, row, column);
+                JLabel c = (JLabel) super.getTableCellRendererComponent(
+                    t, value, isSelected, false, row, column);
+                c.setHorizontalAlignment(SwingConstants.LEFT);
+                c.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
                 if (!isSelected) {
                     boolean late = row < currentRecords.size() && isOverdue(currentRecords.get(row));
                     c.setForeground(late ? Color.RED : t.getForeground());

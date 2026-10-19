@@ -39,7 +39,7 @@ public class ReservationDAO {
                    + "WHERE (UPPER(m.first_name) LIKE ? OR UPPER(m.last_name) LIKE ? "
                    + "OR UPPER(bk.title) LIKE ?) "
                    + (pendingOnly ? "AND r.status = 'Pending' " : "")
-                   + "ORDER BY r.reservation_id DESC";
+                   + "ORDER BY r.reservation_id";
         List<Reservation> list = new ArrayList<>();
         String pattern = "%" + keyword.toUpperCase() + "%";
 
