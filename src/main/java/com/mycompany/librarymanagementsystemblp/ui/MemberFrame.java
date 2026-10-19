@@ -57,12 +57,14 @@ public class MemberFrame extends JFrame {
         JButton btnUpdate = new JButton("UPDATE");
         JButton btnDelete = new JButton("DELETE");
         JButton btnClear = new JButton("CLEAR");
+        JButton btnStudentLogin = new JButton("STUDENT LOGIN");
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         buttons.add(btnSave);
         buttons.add(btnUpdate);
         buttons.add(btnDelete);
         buttons.add(btnClear);
+        buttons.add(btnStudentLogin);
 
         JPanel top = new JPanel(new BorderLayout());
         top.add(form, BorderLayout.CENTER);
@@ -103,6 +105,7 @@ public class MemberFrame extends JFrame {
         btnUpdate.addActionListener(e -> updateMember());
         btnDelete.addActionListener(e -> deleteMember());
         btnClear.addActionListener(e -> clearForm());
+        btnStudentLogin.addActionListener(e -> setStudentLogin());
         btnSearch.addActionListener(e -> searchMembers());
         btnShowAll.addActionListener(e -> {
             txtSearch.setText("");
@@ -223,6 +226,17 @@ public class MemberFrame extends JFrame {
         }
     }
 
+    // Creates (or resets) the login that lets the selected member use the student portal
+    private void setStudentLogin() {
+        if (selectedMember == null) {
+            JOptionPane.showMessageDialog(this,
+                "Please select a member from the table first.",
+                "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        StudentAccountDialog.forStaff(this, selectedMember).setVisible(true);
+    }
+
     private void searchMembers() {
         String keyword = txtSearch.getText().trim();
         if (keyword.isEmpty()) {
@@ -301,4 +315,4 @@ public class MemberFrame extends JFrame {
         }
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
+}
