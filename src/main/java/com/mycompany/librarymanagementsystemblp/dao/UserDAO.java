@@ -23,7 +23,6 @@ public class UserDAO {
         );
     }
 
-    // Returns the User if the login is correct, or null if it is not
     public User login(String username, String password) throws SQLException {
         String sql = "SELECT * FROM USERS "
                    + "WHERE username = ? AND password = ? AND status = 'Active'";
@@ -32,7 +31,7 @@ public class UserDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, username);
-            ps.setString(2, PasswordUtil.hash(password));       // CHANGED: hash the typed password before comparing
+            ps.setString(2, PasswordUtil.hash(password));
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -43,7 +42,6 @@ public class UserDAO {
         return null;
     }
 
-    // CREATE
     public void addUser(User u) throws SQLException {
         String sql = "INSERT INTO USERS (username, password, full_name, user_role, status) "
                    + "VALUES (?, ?, ?, ?, ?)";
@@ -52,7 +50,7 @@ public class UserDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, u.getUsername());
-            ps.setString(2, PasswordUtil.hash(u.getPassword())); // CHANGED: save the hash, not the plain password
+            ps.setString(2, PasswordUtil.hash(u.getPassword()));
             ps.setString(3, u.getFullName());
             ps.setString(4, u.getRole());
             ps.setString(5, u.getStatus());
@@ -60,7 +58,6 @@ public class UserDAO {
         }
     }
 
-    // READ (all)
     public List<User> getAllUsers() throws SQLException {
         String sql = "SELECT * FROM USERS ORDER BY user_id";
         List<User> list = new ArrayList<>();
@@ -76,7 +73,6 @@ public class UserDAO {
         return list;
     }
 
-    // READ (search by username, full name, or role)
     public List<User> searchUsers(String keyword) throws SQLException {
         String sql = "SELECT * FROM USERS "
                    + "WHERE UPPER(username) LIKE ? OR UPPER(full_name) LIKE ? "
@@ -101,7 +97,6 @@ public class UserDAO {
         return list;
     }
 
-    // UPDATE (the password is only changed when changePassword is true)
     public void updateUser(User u, boolean changePassword) throws SQLException {
         String sql = "UPDATE USERS SET username = ?, full_name = ?, user_role = ?, status = ?"
                    + (changePassword ? ", password = ?" : "")
@@ -116,14 +111,13 @@ public class UserDAO {
             ps.setString(i++, u.getRole());
             ps.setString(i++, u.getStatus());
             if (changePassword) {
-                ps.setString(i++, PasswordUtil.hash(u.getPassword())); // CHANGED: hash the new password before saving
+                ps.setString(i++, PasswordUtil.hash(u.getPassword()));
             }
             ps.setInt(i, u.getUserId());
             ps.executeUpdate();
         }
     }
 
-    // DELETE
     public void deleteUser(int userId) throws SQLException {
         String sql = "DELETE FROM USERS WHERE user_id = ?";
 

@@ -9,17 +9,35 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * One-time sample data for testing and demos.
- * Run this class ONCE while the main program is closed (Derby embedded allows one
- * program on the database at a time). Running it again does nothing.
+ * Fills the database with demo data for presentations.
+ *
+ * Every table is filled OLDEST FIRST, so a bigger ID always means a newer
+ * record. That makes the lists look right in every screen:
+ *   - Reservations (shown ID 1 -> last): the newest reservation is at the bottom.
+ *   - Borrowings and Fines (shown newest first): the highest ID is at the top.
+ *   - Members: the newest member has the highest ID and the latest registration date.
+ *
+ * All dates are relative to today, so the data always looks fresh
+ * (overdue books stay overdue, "borrowed today" is really today).
+ *
+ * Run this class to RESET and reload the demo data:
+ *   - It clears Members, Books, Borrowings, Reservations and Fines.
+ *   - It does NOT touch Users (admin/librarian accounts) or Categories.
+ *   - Close the main program first (the embedded database allows one program at a time).
  */
 public class DatabaseSeeder {
 
     private static final BigDecimal FINE_PER_DAY = new BigDecimal("5.00");
+    private static final int MAX_ACTIVE_LOANS = 3;
 
-    // { category, title, author, publisher, total copies, status }
+    // category, title, author, publisher, copies, status
     private static final String[][] BOOKS = {
         {"Fiction", "The Alchemist", "Paulo Coelho", "HarperOne", "3", "Available"},
         {"Fiction", "To Kill a Mockingbird", "Harper Lee", "Grand Central", "2", "Available"},
@@ -44,112 +62,324 @@ public class DatabaseSeeder {
         {"Textbook", "Introduction to Algorithms", "Cormen", "MIT Press", "2", "Available"}
     };
 
-    // { first name, last name, contact no, status }  (email is built from the name)
+    // first name, last name, contact no, status, address, registered (days ago)
+    // Oldest member first, so the newest member gets the highest ID.
     private static final String[][] MEMBERS = {
-        {"Maria", "Santos", "09171234501", "Active"},
-        {"Juan", "Reyes", "09171234502", "Active"},
-        {"Ana", "Cruz", "09171234503", "Active"},
-        {"Pedro", "Garcia", "09171234504", "Active"},
-        {"Liza", "Mendoza", "09171234505", "Active"},
-        {"Carlo", "Torres", "09171234506", "Active"},
-        {"Bea", "Ramos", "09171234507", "Active"},
-        {"Miguel", "Flores", "09171234508", "Active"},
-        {"Sofia", "Villanueva", "09171234509", "Active"},
-        {"Luis", "Aquino", "09171234510", "Active"},
-        {"Karen", "Bautista", "09171234511", "Active"},
-        {"Ryan", "Castillo", "09171234512", "Inactive"}
+        {"Maria", "Santos", "09171234501", "Active", "Brgy. San Roque, Antipolo, Rizal", "120"},
+        {"Juan", "Reyes", "09171234502", "Active", "Brgy. Dolores, Taytay, Rizal", "110"},
+        {"Ana", "Cruz", "09171234503", "Active", "Brgy. Sto. Domingo, Cainta, Rizal", "100"},
+        {"Pedro", "Garcia", "09171234504", "Active", "Brgy. Mayamot, Antipolo, Rizal", "95"},
+        {"Liza", "Mendoza", "09171234505", "Active", "Brgy. San Isidro, Angono, Rizal", "85"},
+        {"Carlo", "Torres", "09171234506", "Active", "Brgy. Muzon, Taytay, Rizal", "75"},
+        {"Bea", "Ramos", "09171234507", "Active", "Brgy. Calawis, Antipolo, Rizal", "65"},
+        {"Miguel", "Flores", "09171234508", "Active", "Brgy. San Juan, Cainta, Rizal", "60"},
+        {"Sofia", "Villanueva", "09171234509", "Active", "Brgy. Bagong Nayon, Antipolo, Rizal", "55"},
+        {"Luis", "Aquino", "09171234510", "Active", "Brgy. Darangan, Binangonan, Rizal", "50"},
+        {"Karen", "Bautista", "09171234511", "Active", "Brgy. Sta. Rosa, Cainta, Rizal", "45"},
+        {"Ryan", "Castillo", "09171234512", "Inactive", "Brgy. Cupang, Antipolo, Rizal", "40"}
     };
 
+    /** A borrowing. returnedDaysAgo = -1 means the book is still out. */
+    private record LoanPlan(String member, String book, int borrowedDaysAgo, int loanDays,
+                            int returnedDaysAgo, boolean finePaid) {
+        boolean returned() {
+            return returnedDaysAgo >= 0;
+        }
+    }
+
+    private record ReservationPlan(String member, String book, int daysAgo, String status) {
+    }
+
+    private record FinePlan(int detailId, BigDecimal amount, LocalDate fineDate, String status) {
+    }
+
+    private static LoanPlan returned(String member, String book, int borrowedAgo, int loanDays,
+                                     int returnedAgo, boolean finePaid) {
+        return new LoanPlan(member, book, borrowedAgo, loanDays, returnedAgo, finePaid);
+    }
+
+    private static LoanPlan out(String member, String book, int borrowedAgo, int loanDays) {
+        return new LoanPlan(member, book, borrowedAgo, loanDays, -1, false);
+    }
+
+    // Members are looked up by first name and books by the start of the title.
+    // The order below does not matter: loans are sorted by date before saving.
+    private static final List<LoanPlan> LOANS = List.of(
+        // ---- Returned on time (no fine) ----
+        returned("Juan",   "Noli",          45, 14, 40, false),
+        returned("Ryan",   "Atomic",        38,  7, 32, false),
+        returned("Miguel", "Noli",          30, 14, 20, false),
+        returned("Luis",   "Astrophysics",  18, 14, 10, false),
+        returned("Luis",   "Harry",         19,  7, 12, false),
+        returned("Bea",    "To Kill",       14,  7,  9, false),
+        returned("Carlo",  "Java",          17, 14,  6, false),
+        returned("Maria",  "The Selfish",   11,  7,  5, false),
+
+        // ---- Returned late (fine = PHP 5.00 per day late) ----
+        returned("Sofia",  "A Brief",       40, 14, 22, false),  // 4 days late  -> 20.00 unpaid
+        returned("Sofia",  "Noli",          35,  7, 21, false),  // 7 days late  -> 35.00 unpaid
+        returned("Karen",  "The Alchemist", 33,  7, 24, false),  // 2 days late  -> 10.00 unpaid
+        returned("Luis",   "The Alchemist", 28, 14, 15, false),  // 1 day late   ->  5.00 unpaid
+        returned("Miguel", "Sapiens",       25,  7, 16, true),   // 2 days late  -> 10.00 paid
+        returned("Ana",    "Atomic",        22,  7, 13, true),   // 2 days late  -> 10.00 paid
+        returned("Liza",   "The Diary",     10,  7,  2, false),  // 1 day late   ->  5.00 unpaid
+
+        // ---- Still borrowed and OVERDUE (shows up in Overdue report) ----
+        out("Carlo",  "1984",        20, 14),  // 6 days overdue
+        out("Ana",    "Cosmos",      15,  7),  // 8 days overdue
+        out("Juan",   "Educated",    12,  7),  // 5 days overdue
+        out("Pedro",  "Introduction", 9,  7),  // 2 days overdue
+
+        // ---- Still borrowed, not yet due ----
+        out("Liza",   "The Alchemist", 5,  7),
+        out("Maria",  "Harry",         3,  7),
+        out("Pedro",  "Database",      2, 14),
+        out("Pedro",  "Java",          2, 14),  // Pedro is at the 3-book limit
+        out("Bea",    "Encyclopedia",  1,  7),
+        out("Karen",  "Sapiens",       0, 14)   // borrowed today
+    );
+
+    // Reservations only make sense for books with no copy on the shelf.
+    private static final List<ReservationPlan> RESERVATIONS = List.of(
+        new ReservationPlan("Luis",   "Harry",        22, "Fulfilled"),
+        new ReservationPlan("Sofia",  "Educated",      8, "Pending"),
+        new ReservationPlan("Karen",  "Encyclopedia",  6, "Cancelled"),
+        new ReservationPlan("Carlo",  "Cosmos",        4, "Pending"),
+        new ReservationPlan("Liza",   "Harry",         2, "Pending"),
+        new ReservationPlan("Miguel", "Harry",         1, "Pending"),
+        new ReservationPlan("Luis",   "Encyclopedia",  0, "Pending")
+    );
+
     public static void main(String[] args) {
-        DatabaseSetup.initialize();   // make sure the tables exist
+        DatabaseSetup.initialize();
+        reset();
         seed();
+        DatabaseConnection.shutdown();
+    }
+
+    /** Clears the demo tables and restarts their IDs at 1. Users and Categories are kept. */
+    public static void reset() {
+        String[][] tables = {
+            {"FINES", "fine_id"},
+            {"BORROWING_DETAILS", "detail_id"},
+            {"BORROWINGS", "borrow_id"},
+            {"RESERVATIONS", "reservation_id"},
+            {"BOOKS", "book_id"},
+            {"MEMBERS", "member_id"}
+        };
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement st = conn.createStatement()) {
+            for (String[] t : tables) {
+                st.executeUpdate("DELETE FROM " + t[0]);
+                st.executeUpdate("ALTER TABLE " + t[0] + " ALTER COLUMN " + t[1] + " RESTART WITH 1");
+            }
+            System.out.println("Old sample data cleared.");
+        } catch (SQLException e) {
+            System.out.println("Reset failed!");
+            e.printStackTrace();
+        }
     }
 
     public static void seed() {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                if (exists(conn, "SELECT COUNT(*) FROM BOOKS WHERE isbn = ?", isbn(1))) {
-                    System.out.println("Sample data is already in the database. Nothing was added.");
+                if (count(conn, "SELECT COUNT(*) FROM BOOKS") > 0) {
+                    System.out.println("The database already has books. Nothing was added. "
+                        + "Run DatabaseSeeder as a program to reset and reload the sample data.");
                     return;
                 }
 
+                verifyPlan();
+
                 int userId = firstId(conn, "SELECT user_id FROM USERS ORDER BY user_id");
 
-                // ----- members -----
-                int[] memberIds = new int[MEMBERS.length];
-                for (int i = 0; i < MEMBERS.length; i++) {
-                    String email = (MEMBERS[i][0] + "." + MEMBERS[i][1]).toLowerCase() + "@mail.com";
-                    memberIds[i] = addMember(conn, MEMBERS[i], email);
+                // Members, oldest registration first.
+                Map<String, Integer> memberIds = new HashMap<>();
+                List<String[]> members = new ArrayList<>(List.of(MEMBERS));
+                members.sort(Comparator.comparingInt((String[] m) -> Integer.parseInt(m[5])).reversed());
+                for (String[] m : members) {
+                    memberIds.put(m[0], addMember(conn, m));
                 }
 
-                // ----- books -----
-                int[] bookIds = new int[BOOKS.length];
+                Map<String, Integer> bookIds = new HashMap<>();
                 for (int i = 0; i < BOOKS.length; i++) {
-                    bookIds[i] = addBook(conn, BOOKS[i], isbn(i + 1));
+                    bookIds.put(BOOKS[i][1], addBook(conn, BOOKS[i], isbn(i + 1)));
                 }
 
-                // ----- borrowings -----
-                // borrow(member#, book#, days ago borrowed, loan days, days ago returned (-1 = still out), fine paid?)
-                // Still out, on time
-                borrow(conn, userId, memberIds[0], bookIds[5], 3, 7, -1, false);    // Santos - Harry Potter
-                borrow(conn, userId, memberIds[3], bookIds[17], 2, 14, -1, false);  // Garcia - Database Concepts
-                borrow(conn, userId, memberIds[3], bookIds[18], 2, 14, -1, false);  // Garcia - Java
-                borrow(conn, userId, memberIds[4], bookIds[0], 5, 7, -1, false);    // Mendoza - Alchemist
-                borrow(conn, userId, memberIds[6], bookIds[15], 1, 7, -1, false);   // Ramos - Britannica
-                // Still out, OVERDUE
-                borrow(conn, userId, memberIds[1], bookIds[7], 12, 7, -1, false);   // Reyes - Educated (5 days late)
-                borrow(conn, userId, memberIds[2], bookIds[11], 15, 7, -1, false);  // Cruz - Cosmos (8 days late)
-                borrow(conn, userId, memberIds[3], bookIds[20], 9, 7, -1, false);   // Garcia - Algorithms (2 days late)
-                borrow(conn, userId, memberIds[5], bookIds[2], 20, 14, -1, false);  // Torres - 1984 (6 days late)
-                // Returned on time
-                borrow(conn, userId, memberIds[7], bookIds[3], 30, 14, 20, false);  // Flores - Noli
-                borrow(conn, userId, memberIds[9], bookIds[13], 18, 14, 10, false); // Aquino - Astrophysics
-                borrow(conn, userId, memberIds[9], bookIds[0], 28, 14, 15, false);  // Aquino - Alchemist
-                borrow(conn, userId, memberIds[1], bookIds[3], 45, 14, 40, false);  // Reyes - Noli
-                // Returned LATE (a fine is created)
-                borrow(conn, userId, memberIds[7], bookIds[8], 25, 7, 16, true);    // Flores - Sapiens (2 days, paid)
-                borrow(conn, userId, memberIds[8], bookIds[10], 40, 14, 22, false); // Villanueva - Brief History (4 days)
-                borrow(conn, userId, memberIds[8], bookIds[3], 35, 7, 21, false);   // Villanueva - Noli (7 days)
-                borrow(conn, userId, memberIds[10], bookIds[0], 33, 7, 24, false);  // Bautista - Alchemist (2 days)
-                borrow(conn, userId, memberIds[2], bookIds[6], 22, 7, 13, true);    // Cruz - Atomic Habits (2 days, paid)
+                // Borrowings, oldest first, so a higher ID is always a newer borrowing.
+                List<LoanPlan> loans = new ArrayList<>(LOANS);
+                loans.sort(Comparator.comparingInt(LoanPlan::borrowedDaysAgo).reversed());
+                List<FinePlan> fines = new ArrayList<>();
+                for (LoanPlan loan : loans) {
+                    borrow(conn, userId, memberIds.get(loan.member()),
+                           bookIds.get(findTitle(loan.book())), loan, fines);
+                }
 
-                // ----- reservations (only for books with no copies on the shelf) -----
-                reserve(conn, memberIds[4], bookIds[5], 2, "Pending");     // Mendoza -> Harry Potter
-                reserve(conn, memberIds[7], bookIds[5], 1, "Pending");     // Flores -> Harry Potter
-                reserve(conn, memberIds[8], bookIds[7], 3, "Pending");     // Villanueva -> Educated
-                reserve(conn, memberIds[9], bookIds[11], 4, "Fulfilled");  // Aquino -> Cosmos
-                reserve(conn, memberIds[10], bookIds[15], 5, "Cancelled"); // Bautista -> Britannica
+                // Fines are saved after all borrowings, oldest fine first.
+                fines.sort(Comparator.comparing(FinePlan::fineDate).thenComparingInt(FinePlan::detailId));
+                for (FinePlan f : fines) {
+                    addFine(conn, f);
+                }
+
+                // Reservations, oldest first, so the newest one has the highest ID.
+                List<ReservationPlan> reservations = new ArrayList<>(RESERVATIONS);
+                reservations.sort(Comparator.comparingInt(ReservationPlan::daysAgo).reversed());
+                for (ReservationPlan r : reservations) {
+                    reserve(conn, memberIds.get(r.member()),
+                            bookIds.get(findTitle(r.book())), r);
+                }
 
                 conn.commit();
                 System.out.println("Sample data added: " + MEMBERS.length + " members, "
-                    + BOOKS.length + " books, 18 borrowings (with fines), 5 reservations.");
+                    + BOOKS.length + " books, " + LOANS.size() + " borrowings, "
+                    + fines.size() + " fines, " + RESERVATIONS.size() + " reservations.");
             } catch (SQLException | RuntimeException e) {
                 conn.rollback();
                 throw e;
             }
-        } catch (SQLException e) {
+        } catch (SQLException | RuntimeException e) {
             System.out.println("Seeding failed!");
             e.printStackTrace();
         }
     }
 
-    // ---------- inserts ----------
+    // ------------------------------------------------------------------
+    // Safety check: the sample data follows the same rules as the program.
+    // If a rule is broken it stops BEFORE anything is saved.
+    // ------------------------------------------------------------------
+    static void verifyPlan() {
+        Map<String, Integer> registeredAgo = new HashMap<>();
+        Map<String, String> memberStatus = new HashMap<>();
+        for (String[] m : MEMBERS) {
+            registeredAgo.put(m[0], Integer.parseInt(m[5]));
+            memberStatus.put(m[0], m[3]);
+        }
 
-    private static int addMember(Connection conn, String[] m, String email) throws SQLException {
+        Map<String, Integer> activeLoans = new HashMap<>();
+        Map<String, Integer> onShelf = new HashMap<>();
+        Map<String, Integer> totalCopies = new HashMap<>();
+        Map<String, String> bookStatus = new HashMap<>();
+        for (String[] b : BOOKS) {
+            totalCopies.put(b[1], Integer.parseInt(b[4]));
+            onShelf.put(b[1], Integer.parseInt(b[4]));
+            bookStatus.put(b[1], b[5]);
+        }
+
+        List<String> activePairs = new ArrayList<>();
+        for (LoanPlan l : LOANS) {
+            Integer reg = registeredAgo.get(l.member());
+            if (reg == null) {
+                throw new IllegalStateException("Unknown member: " + l.member());
+            }
+            String title = findTitle(l.book());
+            if (l.borrowedDaysAgo() > reg) {
+                throw new IllegalStateException(l.member() + " borrowed before registering.");
+            }
+            if (l.returned() && l.returnedDaysAgo() > l.borrowedDaysAgo()) {
+                throw new IllegalStateException(l.member() + " returned before borrowing.");
+            }
+            if ("Unavailable".equals(bookStatus.get(title))) {
+                throw new IllegalStateException(title + " is unavailable and cannot be borrowed.");
+            }
+            if (!l.returned()) {
+                if (!"Active".equals(memberStatus.get(l.member()))) {
+                    throw new IllegalStateException(l.member() + " is inactive but has a book out.");
+                }
+                int n = activeLoans.merge(l.member(), 1, Integer::sum);
+                if (n > MAX_ACTIVE_LOANS) {
+                    throw new IllegalStateException(l.member() + " has more than "
+                        + MAX_ACTIVE_LOANS + " books out.");
+                }
+                String pair = l.member() + "|" + title;
+                if (activePairs.contains(pair)) {
+                    throw new IllegalStateException(l.member() + " borrowed " + title + " twice.");
+                }
+                activePairs.add(pair);
+                onShelf.merge(title, -1, Integer::sum);
+            }
+        }
+
+        // At no point in time may more copies be out than the library owns.
+        for (String title : totalCopies.keySet()) {
+            for (int day = 130; day >= 0; day--) {
+                int out = 0;
+                for (LoanPlan l : LOANS) {
+                    if (!findTitle(l.book()).equals(title)) {
+                        continue;
+                    }
+                    boolean started = day <= l.borrowedDaysAgo();
+                    boolean notBack = !l.returned() || day > l.returnedDaysAgo();
+                    if (started && notBack) {
+                        out++;
+                    }
+                }
+                if (out > totalCopies.get(title)) {
+                    throw new IllegalStateException("Too many copies of " + title
+                        + " out at " + day + " days ago.");
+                }
+            }
+        }
+
+        List<String> pendingPairs = new ArrayList<>();
+        for (ReservationPlan r : RESERVATIONS) {
+            Integer reg = registeredAgo.get(r.member());
+            if (reg == null || r.daysAgo() > reg) {
+                throw new IllegalStateException(r.member() + " reserved before registering.");
+            }
+            String title = findTitle(r.book());
+            if ("Pending".equals(r.status())) {
+                if (!"Active".equals(memberStatus.get(r.member()))) {
+                    throw new IllegalStateException(r.member() + " is inactive and cannot reserve.");
+                }
+                if (onShelf.get(title) > 0) {
+                    throw new IllegalStateException(title + " is on the shelf, so it cannot be reserved.");
+                }
+                String pair = r.member() + "|" + title;
+                if (pendingPairs.contains(pair)) {
+                    throw new IllegalStateException(r.member() + " has two pending reservations for " + title);
+                }
+                pendingPairs.add(pair);
+            }
+        }
+    }
+
+    /** Finds the one book whose title starts with the given text. */
+    private static String findTitle(String start) {
+        String found = null;
+        for (String[] b : BOOKS) {
+            if (b[1].startsWith(start)) {
+                if (found != null) {
+                    throw new IllegalStateException("More than one book starts with: " + start);
+                }
+                found = b[1];
+            }
+        }
+        if (found == null) {
+            throw new IllegalStateException("No book starts with: " + start);
+        }
+        return found;
+    }
+
+    // ------------------------------------------------------------------
+    // Database helpers
+    // ------------------------------------------------------------------
+    private static int addMember(Connection conn, String[] m) throws SQLException {
+        String email = (m[0] + "." + m[1]).toLowerCase() + "@mail.com";
         int existing = findId(conn, "SELECT member_id FROM MEMBERS WHERE email = ?", email);
         if (existing > 0) {
             return existing;
         }
-        String sql = "INSERT INTO MEMBERS (first_name, last_name, contact_no, email, address, status) "
-                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO MEMBERS (first_name, last_name, contact_no, email, address, "
+                   + "date_registered, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, m[0]);
             ps.setString(2, m[1]);
             ps.setString(3, m[2]);
             ps.setString(4, email);
-            ps.setString(5, "Antipolo, Rizal");
-            ps.setString(6, m[3]);
+            ps.setString(5, m[4]);
+            ps.setDate(6, Date.valueOf(LocalDate.now().minusDays(Integer.parseInt(m[5]))));
+            ps.setString(7, m[3]);
             ps.executeUpdate();
             return generatedKey(ps);
         }
@@ -177,15 +407,13 @@ public class DatabaseSeeder {
         }
     }
 
-    // Creates a borrowing with dates in the past, the same way BorrowingDAO would
     private static void borrow(Connection conn, int userId, int memberId, int bookId,
-                               int daysAgoBorrowed, int loanDays, int daysAgoReturned,
-                               boolean finePaid) throws SQLException {
+                               LoanPlan loan, List<FinePlan> fines) throws SQLException {
         LocalDate today = LocalDate.now();
-        LocalDate borrowDate = today.minusDays(daysAgoBorrowed);
-        LocalDate dueDate = borrowDate.plusDays(loanDays);
-        boolean returned = daysAgoReturned >= 0;
-        LocalDate returnDate = returned ? today.minusDays(daysAgoReturned) : null;
+        LocalDate borrowDate = today.minusDays(loan.borrowedDaysAgo());
+        LocalDate dueDate = borrowDate.plusDays(loan.loanDays());
+        boolean returned = loan.returned();
+        LocalDate returnDate = returned ? today.minusDays(loan.returnedDaysAgo()) : null;
 
         int borrowId;
         String sqlBorrow = "INSERT INTO BORROWINGS (member_id, user_id, borrow_date, due_date, status) "
@@ -216,7 +444,7 @@ public class DatabaseSeeder {
             detailId = generatedKey(ps);
         }
 
-        if (!returned) {   // the copy is still out, so it is not on the shelf
+        if (!returned) {
             try (PreparedStatement ps = conn.prepareStatement(
                     "UPDATE BOOKS SET available_copies = available_copies - 1 WHERE book_id = ?")) {
                 ps.setInt(1, bookId);
@@ -225,36 +453,45 @@ public class DatabaseSeeder {
         } else {
             long daysLate = ChronoUnit.DAYS.between(dueDate, returnDate);
             if (daysLate > 0) {
-                String sqlFine = "INSERT INTO FINES (detail_id, amount, fine_date, status) "
-                               + "VALUES (?, ?, ?, ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlFine)) {
-                    ps.setInt(1, detailId);
-                    ps.setBigDecimal(2, FINE_PER_DAY.multiply(BigDecimal.valueOf(daysLate)));
-                    ps.setDate(3, Date.valueOf(returnDate));
-                    ps.setString(4, finePaid ? "Paid" : "Unpaid");
-                    ps.executeUpdate();
-                }
+                fines.add(new FinePlan(detailId, FINE_PER_DAY.multiply(BigDecimal.valueOf(daysLate)),
+                    returnDate, loan.finePaid() ? "Paid" : "Unpaid"));
             }
         }
     }
 
+    private static void addFine(Connection conn, FinePlan f) throws SQLException {
+        String sql = "INSERT INTO FINES (detail_id, amount, fine_date, status) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, f.detailId());
+            ps.setBigDecimal(2, f.amount());
+            ps.setDate(3, Date.valueOf(f.fineDate()));
+            ps.setString(4, f.status());
+            ps.executeUpdate();
+        }
+    }
+
     private static void reserve(Connection conn, int memberId, int bookId,
-                                int daysAgo, String status) throws SQLException {
+                                ReservationPlan r) throws SQLException {
         String sql = "INSERT INTO RESERVATIONS (member_id, book_id, reservation_date, status) "
                    + "VALUES (?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, memberId);
             ps.setInt(2, bookId);
-            ps.setDate(3, Date.valueOf(LocalDate.now().minusDays(daysAgo)));
-            ps.setString(4, status);
+            ps.setDate(3, Date.valueOf(LocalDate.now().minusDays(r.daysAgo())));
+            ps.setString(4, r.status());
             ps.executeUpdate();
         }
     }
 
-    // ---------- small helpers ----------
-
-    private static String isbn(int number) {
-        return String.format("978-1-0000-%03d-0", number);
+    /** A valid ISBN-13 (with the correct check digit) such as 978-1-00000-001-7. */
+    static String isbn(int number) {
+        String body = String.format("978100000%03d", number);
+        int sum = 0;
+        for (int i = 0; i < 12; i++) {
+            sum += (body.charAt(i) - '0') * (i % 2 == 0 ? 1 : 3);
+        }
+        int check = (10 - sum % 10) % 10;
+        return String.format("978-1-00000-%03d-%d", number, check);
     }
 
     private static int generatedKey(PreparedStatement ps) throws SQLException {
@@ -264,7 +501,6 @@ public class DatabaseSeeder {
         }
     }
 
-    // Returns the first int found by the query, or 0 if there is no row
     private static int findId(Connection conn, String sql, String value) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, value);
@@ -284,13 +520,11 @@ public class DatabaseSeeder {
         }
     }
 
-    private static boolean exists(Connection conn, String sql, String value) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, value);
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getInt(1) > 0;
-            }
+    private static int count(Connection conn, String sql) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getInt(1);
         }
     }
 }

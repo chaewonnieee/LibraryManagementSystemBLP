@@ -18,7 +18,6 @@ public class FineFrame extends JFrame {
     private List<Fine> currentFines = new ArrayList<>();
     private Fine selectedFine = null;
 
-    // Read-only details of the selected fine
     private final JTextField txtFineId = new JTextField(10);
     private final JTextField txtMember = new JTextField(20);
     private final JTextField txtBook = new JTextField(25);
@@ -117,9 +116,8 @@ public class FineFrame extends JFrame {
             chkUnpaidOnly.setSelected(false);
             refreshTable();
         });
-        BackBar.install(this);   // Lumora theme + Back button bar at the top of the window
+        BackBar.install(this);
 
-        // Reload whenever the user comes back to this window (a book may have been returned late)
         addWindowFocusListener(new WindowAdapter() {
             @Override
             public void windowGainedFocus(WindowEvent e) {
@@ -147,8 +145,6 @@ public class FineFrame extends JFrame {
         loadFines(true);
     }
 
-    // showMessages is false for the automatic reload, so no dialog can pop up by itself.
-    // The selected fine stays selected after the reload.
     private void loadFines(boolean showMessages) {
         int keepId = selectedFine == null ? -1 : selectedFine.getFineId();
         try {

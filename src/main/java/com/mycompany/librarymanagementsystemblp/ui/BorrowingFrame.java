@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
@@ -23,7 +24,7 @@ public class BorrowingFrame extends JFrame {
     private final BorrowingDAO borrowingDAO = new BorrowingDAO();
     private final MemberDAO memberDAO = new MemberDAO();
     private final BookDAO bookDAO = new BookDAO();
-    private final User currentUser;   // the staff member processing the borrowing
+    private final User currentUser;
 
     private List<BorrowRecord> currentRecords = new ArrayList<>();
     private BorrowRecord selectedRecord = null;
@@ -46,8 +47,6 @@ public class BorrowingFrame extends JFrame {
         resetDueDate();
         refreshTable();
     }
-
-    // ---------- Building the window ----------
 
     private void initComponents() {
         setTitle("Borrowing and Returns");
@@ -82,7 +81,6 @@ public class BorrowingFrame extends JFrame {
         top.add(buttons, BorderLayout.SOUTH);
         add(top, BorderLayout.NORTH);
 
-        // Search bar
         JButton btnSearch = new JButton("SEARCH");
         JButton btnShowAll = new JButton("SHOW ALL");
 
@@ -93,7 +91,6 @@ public class BorrowingFrame extends JFrame {
         searchPanel.add(btnSearch);
         searchPanel.add(btnShowAll);
 
-        // Table (late books are shown in red)
         tableModel = new DefaultTableModel(
             new String[]{"Record ID", "Borrow ID", "Member", "Book",
                          "Borrowed", "Due", "Returned", "Status"}, 0) {
@@ -130,14 +127,12 @@ public class BorrowingFrame extends JFrame {
         center.add(new JScrollPane(table), BorderLayout.CENTER);
         add(center, BorderLayout.CENTER);
 
-        // Return panel
         JButton btnReturn = new JButton("RETURN SELECTED BOOK");
         JPanel returnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 8));
         returnPanel.add(lblSelected);
         returnPanel.add(btnReturn);
         add(returnPanel, BorderLayout.SOUTH);
 
-        // Button events
         btnBorrow.addActionListener(e -> borrowBook());
         btnClear.addActionListener(e -> clearForm());
         btnReturn.addActionListener(e -> returnBook());
@@ -147,7 +142,7 @@ public class BorrowingFrame extends JFrame {
             chkActiveOnly.setSelected(false);
             refreshTable();
         });
-        BackBar.install(this);   // Back button bar at the top of the window
+        BackBar.install(this);
     }
 
     private void addField(JPanel panel, int row, int col, String label, JComponent comp) {
@@ -165,9 +160,6 @@ public class BorrowingFrame extends JFrame {
         panel.add(comp, gbc);
     }
 
-    // ---------- Loading data ----------
-
-    // Only active members and books that can really be borrowed are offered
     private void loadMembersAndBooks() {
         try {
             cmbMember.removeAllItems();
@@ -231,8 +223,6 @@ public class BorrowingFrame extends JFrame {
             + " (" + selectedRecord.getMemberName() + ")");
     }
 
-    // ---------- Button actions ----------
-
     private void borrowBook() {
         Member member = (Member) cmbMember.getSelectedItem();
         Book book = (Book) cmbBook.getSelectedItem();
@@ -269,7 +259,7 @@ public class BorrowingFrame extends JFrame {
         } catch (SQLException ex) {
             handleSqlError(ex);
         } catch (IllegalStateException ex) {
-            // a borrowing rule was broken (inactive member, loan limit, no copies, ...)
+
             JOptionPane.showMessageDialog(this, ex.getMessage(),
                 "Cannot Borrow", JOptionPane.WARNING_MESSAGE);
         }
@@ -288,10 +278,38 @@ public class BorrowingFrame extends JFrame {
                 "Already Returned", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        int choice = JOptionPane.showConfirmDialog(this,
-            "Return \"" + selectedRecord.getBookTitle() + "\" from "
-                + selectedRecord.getMemberName() + " today?",
-            "Confirm Return", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        LocalDate today = LocalDate.now();
+        LocalDate due = null;
+        try {
+            due = LocalDate.parse(selectedRecord.getDueDate());
+        } catch (DateTimeParseException ex) {
+            // Due date could not be read; treat as not overdue.
+        }
+        long daysLate = due == null ? 0 : ChronoUnit.DAYS.between(due, today);
+        boolean late = daysLate > 0;
+
+        String status;
+        if (late) {
+            BigDecimal expectedFine = BorrowingDAO.FINE_PER_DAY.multiply(BigDecimal.valueOf(daysLate));
+            status = "<font color='#B00020'><b>OVERDUE by " + daysLate + (daysLate == 1 ? " day" : " days")
+                   + ".</b><br>A late fine of <b>PHP " + expectedFine.setScale(2).toPlainString()
+                   + "</b> will be charged.</font>";
+        } else if (due != null && due.equals(today)) {
+            status = "<font color='#1B5E20'>Due today. No fine.</font>";
+        } else {
+            status = "<font color='#1B5E20'>Returned on time. No fine.</font>";
+        }
+
+        String message = "<html><body style='width: 300px'>"
+            + "Return <b>\"" + selectedRecord.getBookTitle() + "\"</b><br>"
+            + "from <b>" + selectedRecord.getMemberName() + "</b> today (" + today + ")?<br><br>"
+            + "Borrowed: " + selectedRecord.getBorrowDate() + "<br>"
+            + "Due: " + selectedRecord.getDueDate() + "<br><br>"
+            + status
+            + "</body></html>";
+        int choice = JOptionPane.showConfirmDialog(this, message, "Confirm Return",
+            JOptionPane.YES_NO_OPTION,
+            late ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE);
         if (choice != JOptionPane.YES_OPTION) {
             return;
         }
@@ -304,7 +322,9 @@ public class BorrowingFrame extends JFrame {
                         + " was charged. You can collect it in the Fines screen.",
                     "Late Return", JOptionPane.WARNING_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, "Book returned on time. No fine.");
+                JOptionPane.showMessageDialog(this,
+                    "\"" + selectedRecord.getBookTitle() + "\" was returned on time. No fine.",
+                    "Book Returned", JOptionPane.INFORMATION_MESSAGE);
             }
             loadMembersAndBooks();
             refreshTable();
@@ -330,10 +350,8 @@ public class BorrowingFrame extends JFrame {
     }
 
     private void resetDueDate() {
-        txtDueDate.setText(LocalDate.now().plusDays(7).toString());   // default loan: 7 days
+        txtDueDate.setText(LocalDate.now().plusDays(7).toString());
     }
-
-    // ---------- Messages ----------
 
     private void showWarning(String message) {
         JOptionPane.showMessageDialog(this, message,

@@ -10,10 +10,10 @@ import javax.swing.plaf.basic.BasicButtonUI;
 
 public final class Theme {
 
-    public static final Color NAVY = new Color(16, 10, 57);        // #100A39 dark indigo
+    public static final Color NAVY = new Color(16, 10, 57);
     public static final Color NAVY_HOVER = new Color(48, 38, 110);
-    public static final Color CREAM = new Color(239, 233, 223);    // #EFE9DF
-    public static final Color GOLD = new Color(255, 186, 113);     // #FFBA71 peach
+    public static final Color CREAM = new Color(239, 233, 223);
+    public static final Color GOLD = new Color(255, 186, 113);
     public static final Color GOLD_HOVER = new Color(255, 206, 150);
     public static final Color FIELD_BORDER = new Color(190, 183, 170);
     public static final Color FIELD_READONLY = new Color(244, 240, 232);
@@ -28,7 +28,6 @@ public final class Theme {
     private Theme() {
     }
 
-    // Makes a button flat and colored, with a hover effect
     public static void styleButton(JButton btn, Color normal, Color hover, Color textColor) {
         btn.setUI(new BasicButtonUI());
         btn.setOpaque(true);
@@ -51,7 +50,6 @@ public final class Theme {
         });
     }
 
-    // Same as styleButton, but with rounded corners (like the Lumora design)
     public static void styleRoundedButton(JButton btn, Color normal, Color hover,
                                           Color textColor, int radius) {
         styleButton(btn, normal, hover, textColor);
@@ -71,7 +69,6 @@ public final class Theme {
         });
     }
 
-    // A pill-shaped label, like "EXPLORE . LEARN . DISCOVER"
     public static JLabel createPill(String text, Color background, Color textColor, float fontSize) {
         JLabel pill = new JLabel(text, SwingConstants.CENTER) {
             @Override
@@ -92,7 +89,6 @@ public final class Theme {
         return pill;
     }
 
-    // A panel with rounded corners and a thin border (used for dashboard cards)
     public static class RoundedPanel extends JPanel {
         private final Color borderColor;
         private final int radius;
@@ -118,7 +114,6 @@ public final class Theme {
         }
     }
 
-    // Styles a text field like the design: white, thin border, some padding
     public static void styleField(JTextField field) {
         field.setFont(TEXT_FONT);
         field.setBackground(Color.WHITE);
@@ -129,8 +124,6 @@ public final class Theme {
             BorderFactory.createEmptyBorder(5, 8, 5, 8)));
     }
 
-    // Loads /logo.png, trims its transparent margin, and scales it to the given width.
-    // Returns null if the logo file is missing, so the screens still work without it.
     public static ImageIcon loadLogo(int targetWidth) {
         try {
             java.net.URL url = Theme.class.getResource("/logo.png");
@@ -159,7 +152,6 @@ public final class Theme {
         }
     }
 
-    // Uses the logo as the window icon (instead of the Java cup)
     public static void applyWindowIcon(JFrame frame) {
         ImageIcon icon = loadLogo(64);
         if (icon != null) {
@@ -167,12 +159,7 @@ public final class Theme {
         }
     }
 
-    // =====================================================================
-    //  Whole-window styling: call Theme.styleTree(content) once and every
-    //  panel, label, field, button, table and checkbox below it gets the Lumora look.
-    // =====================================================================
-
-    public static final String SKIP = "lumora.skip";   // put this client property on a component to leave it alone
+    public static final String SKIP = "lumora.skip";
 
     public static void styleTree(Component c) {
         if (c instanceof JComponent && Boolean.TRUE.equals(((JComponent) c).getClientProperty(SKIP))) {
@@ -214,7 +201,6 @@ public final class Theme {
         }
     }
 
-    // Keeps the size/style a screen chose on purpose (bold totals, italic notes), swaps the font and color
     private static void styleLabel(JLabel label) {
         Font f = label.getFont();
         boolean lookAndFeelDefault = f.getSize() == 12;
@@ -224,7 +210,6 @@ public final class Theme {
         label.setForeground(NAVY);
     }
 
-    // The button's job decides its color: save/update = navy, clear/show all = gold, delete/cancel = red
     private static void styleActionButton(JButton btn) {
         String text = btn.getText() == null ? "" : btn.getText().toUpperCase();
         if (text.contains("DELETE") || text.contains("CANCEL")) {
@@ -247,7 +232,6 @@ public final class Theme {
         }
     }
 
-    // Navy header, thin row lines, gold selection
     public static void styleTable(JTable table) {
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         table.setForeground(NAVY);
@@ -268,8 +252,6 @@ public final class Theme {
         header.setFont(new Font("Segoe UI", Font.BOLD, 12));
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 32));
 
-        // Header text and cell text use the same left alignment and padding,
-        // so every column header lines up with the values underneath it.
         final Border pad = BorderFactory.createEmptyBorder(0, 8, 0, 8);
         header.setDefaultRenderer(new javax.swing.table.DefaultTableCellRenderer() {
             @Override
@@ -284,7 +266,7 @@ public final class Theme {
                 return this;
             }
         });
-        // Replace the stock renderers (numbers are right-aligned by default) with left-aligned padded ones
+
         javax.swing.table.DefaultTableCellRenderer cells = new javax.swing.table.DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object value,

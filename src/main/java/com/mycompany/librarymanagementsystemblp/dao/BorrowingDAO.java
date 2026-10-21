@@ -18,7 +18,6 @@ public class BorrowingDAO {
     public static final BigDecimal FINE_PER_DAY = new BigDecimal("5.00");
     public static final int MAX_ACTIVE_LOANS = 3;
 
-    // JOIN across 4 tables: details + borrowings + members + books
     private static final String SELECT_RECORDS =
         "SELECT d.detail_id, d.borrow_id, br.member_id, "
       + "m.last_name || ', ' || m.first_name AS member_name, "
@@ -43,7 +42,6 @@ public class BorrowingDAO {
         );
     }
 
-    // READ: all records, or only the books still out, filtered by member name or book title
     public List<BorrowRecord> getRecords(String keyword, boolean activeOnly) throws SQLException {
         String sql = SELECT_RECORDS
                    + "WHERE (UPPER(m.first_name) LIKE ? OR UPPER(m.last_name) LIKE ? "
@@ -69,7 +67,6 @@ public class BorrowingDAO {
         return list;
     }
 
-    // CREATE: borrow a book. All three steps succeed together, or none of them do.
     public void borrowBook(int memberId, int userId, int bookId, LocalDate dueDate)
             throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
@@ -78,7 +75,6 @@ public class BorrowingDAO {
                 checkMemberCanBorrow(conn, memberId);
                 checkBookCanBeBorrowed(conn, bookId, memberId);
 
-                // 1. the borrowing header
                 int borrowId;
                 String sqlBorrow = "INSERT INTO BORROWINGS (member_id, user_id, due_date) "
                                  + "VALUES (?, ?, ?)";
@@ -94,7 +90,6 @@ public class BorrowingDAO {
                     }
                 }
 
-                // 2. the book in that borrowing
                 String sqlDetail = "INSERT INTO BORROWING_DETAILS (borrow_id, book_id) VALUES (?, ?)";
                 try (PreparedStatement ps = conn.prepareStatement(sqlDetail)) {
                     ps.setInt(1, borrowId);
@@ -102,7 +97,6 @@ public class BorrowingDAO {
                     ps.executeUpdate();
                 }
 
-                // 3. one less copy on the shelf
                 String sqlBook = "UPDATE BOOKS SET available_copies = available_copies - 1 "
                                + "WHERE book_id = ? AND available_copies > 0";
                 try (PreparedStatement ps = conn.prepareStatement(sqlBook)) {
@@ -120,7 +114,6 @@ public class BorrowingDAO {
         }
     }
 
-    // UPDATE: return a book. Returns the fine charged (0.00 if the book is on time).
     public BigDecimal returnBook(int detailId) throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
@@ -148,7 +141,6 @@ public class BorrowingDAO {
                     }
                 }
 
-                // 1. mark the book as returned today
                 String sqlReturn = "UPDATE BORROWING_DETAILS "
                                  + "SET return_date = CURRENT_DATE, status = 'Returned' "
                                  + "WHERE detail_id = ?";
@@ -157,7 +149,6 @@ public class BorrowingDAO {
                     ps.executeUpdate();
                 }
 
-                // 2. one more copy on the shelf
                 String sqlBook = "UPDATE BOOKS SET available_copies = available_copies + 1 "
                                + "WHERE book_id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(sqlBook)) {
@@ -165,7 +156,6 @@ public class BorrowingDAO {
                     ps.executeUpdate();
                 }
 
-                // 3. close the borrowing when all its books are back
                 String sqlClose = "UPDATE BORROWINGS SET status = 'Returned' "
                                 + "WHERE borrow_id = ? AND NOT EXISTS ("
                                 + "SELECT 1 FROM BORROWING_DETAILS "
@@ -176,7 +166,6 @@ public class BorrowingDAO {
                     ps.executeUpdate();
                 }
 
-                // 4. a late return creates a fine
                 BigDecimal fine = BigDecimal.ZERO;
                 long daysLate = ChronoUnit.DAYS.between(dueDate, LocalDate.now());
                 if (daysLate > 0) {
@@ -197,8 +186,6 @@ public class BorrowingDAO {
             }
         }
     }
-
-    // ---------- Rules checked before borrowing ----------
 
     private void checkMemberCanBorrow(Connection conn, int memberId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(

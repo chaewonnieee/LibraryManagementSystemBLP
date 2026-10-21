@@ -15,7 +15,6 @@ import java.util.Map;
 
 public class ReportDAO {
 
-    // A report is just column names plus rows, so one JTable can show any of them
     public static class Report {
         public final String[] columns;
         public final List<Object[]> rows = new ArrayList<>();
@@ -24,8 +23,6 @@ public class ReportDAO {
             this.columns = columns;
         }
     }
-
-    // ---------- Dashboard summary (label -> value, in display order) ----------
 
     public Map<String, String> getDashboardSummary() throws SQLException {
         Map<String, String> summary = new LinkedHashMap<>();
@@ -66,8 +63,6 @@ public class ReportDAO {
         }
     }
 
-    // ---------- Report 1: books that are late and still not returned ----------
-
     public Report getOverdueBooks() throws SQLException {
         String sql = "SELECT d.detail_id, m.last_name, m.first_name, m.contact_no, "
                    + "bk.title, br.due_date "
@@ -103,8 +98,6 @@ public class ReportDAO {
         return report;
     }
 
-    // ---------- Report 2: how many books were borrowed each day (GROUP BY) ----------
-
     public Report getDailyBorrowings() throws SQLException {
         String sql = "SELECT br.borrow_date, COUNT(*) AS books_borrowed "
                    + "FROM BORROWINGS br "
@@ -123,8 +116,6 @@ public class ReportDAO {
         }
         return report;
     }
-
-    // ---------- Report 3: inventory status of every book ----------
 
     public Report getInventoryStatus() throws SQLException {
         String sql = "SELECT b.title, c.category_name, b.total_copies, "
@@ -151,8 +142,6 @@ public class ReportDAO {
         return report;
     }
 
-    // ---------- Report 4: titles and copies per category (LEFT JOIN + GROUP BY) ----------
-
     public Report getBooksPerCategory() throws SQLException {
         String sql = "SELECT c.category_id, c.category_name, "
                    + "COUNT(b.book_id) AS titles, SUM(b.total_copies) AS copies "
@@ -167,7 +156,7 @@ public class ReportDAO {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                // getInt turns a NULL sum (category with no books) into 0
+
                 report.rows.add(new Object[]{
                     rs.getString("category_name"), rs.getInt("titles"), rs.getInt("copies")
                 });
@@ -175,8 +164,6 @@ public class ReportDAO {
         }
         return report;
     }
-
-    // ---------- Report 5: the 10 most borrowed books ----------
 
     public Report getMostBorrowedBooks() throws SQLException {
         String sql = "SELECT bk.book_id, bk.title, bk.author, "
@@ -199,8 +186,6 @@ public class ReportDAO {
         }
         return report;
     }
-
-    // ---------- Report 6: how much each member still owes in fines ----------
 
     public Report getUnpaidFinesByMember() throws SQLException {
         String sql = "SELECT m.member_id, m.last_name, m.first_name, "

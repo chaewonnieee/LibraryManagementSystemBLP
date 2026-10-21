@@ -4,11 +4,11 @@ public class Reservation {
 
     private int reservationId;
     private int memberId;
-    private String memberName;      // filled in by a JOIN with MEMBERS
+    private String memberName;
     private int bookId;
-    private String bookTitle;       // filled in by a JOIN with BOOKS
+    private String bookTitle;
     private String reservationDate;
-    private String status;          // Pending, Fulfilled, or Cancelled
+    private String status;
 
     public Reservation() {
     }

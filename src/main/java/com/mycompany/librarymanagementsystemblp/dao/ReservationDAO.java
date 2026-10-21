@@ -11,7 +11,6 @@ import java.util.List;
 
 public class ReservationDAO {
 
-    // JOIN across 3 tables: reservations + members + books
     private static final String SELECT_RESERVATIONS =
         "SELECT r.reservation_id, r.member_id, "
       + "m.last_name || ', ' || m.first_name AS member_name, "
@@ -32,7 +31,6 @@ public class ReservationDAO {
         );
     }
 
-    // READ: all reservations, or only pending ones, filtered by member name or book title
     public List<Reservation> getReservations(String keyword, boolean pendingOnly)
             throws SQLException {
         String sql = SELECT_RESERVATIONS
@@ -59,11 +57,9 @@ public class ReservationDAO {
         return list;
     }
 
-    // CREATE: reserve a book. Rules are checked first; a broken rule throws IllegalStateException.
     public void addReservation(int memberId, int bookId) throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
 
-            // Rule 1: the member must exist and be active
             try (PreparedStatement ps = conn.prepareStatement(
                     "SELECT status FROM MEMBERS WHERE member_id = ?")) {
                 ps.setInt(1, memberId);
@@ -78,7 +74,6 @@ public class ReservationDAO {
                 }
             }
 
-            // Rule 2: only books with no copies on the shelf can be reserved
             try (PreparedStatement ps = conn.prepareStatement(
                     "SELECT available_copies FROM BOOKS WHERE book_id = ?")) {
                 ps.setInt(1, bookId);
@@ -93,7 +88,6 @@ public class ReservationDAO {
                 }
             }
 
-            // Rule 3: no duplicate pending reservation for the same member and book
             try (PreparedStatement ps = conn.prepareStatement(
                     "SELECT COUNT(*) FROM RESERVATIONS "
                   + "WHERE member_id = ? AND book_id = ? AND status = 'Pending'")) {
@@ -117,7 +111,6 @@ public class ReservationDAO {
         }
     }
 
-    // UPDATE: set a pending reservation to 'Fulfilled' or 'Cancelled'
     public void changeStatus(int reservationId, String newStatus) throws SQLException {
         String sql = "UPDATE RESERVATIONS SET status = ? "
                    + "WHERE reservation_id = ? AND status = 'Pending'";

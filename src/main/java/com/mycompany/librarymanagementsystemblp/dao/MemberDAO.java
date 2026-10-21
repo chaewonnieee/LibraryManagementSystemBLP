@@ -24,7 +24,6 @@ public class MemberDAO {
         );
     }
 
-    // CREATE
     public void addMember(Member m) throws SQLException {
         String sql = "INSERT INTO MEMBERS (first_name, last_name, contact_no, email, address, status) "
                    + "VALUES (?, ?, ?, ?, ?, ?)";
@@ -42,7 +41,6 @@ public class MemberDAO {
         }
     }
 
-    // READ (all)
     public List<Member> getAllMembers() throws SQLException {
         String sql = "SELECT * FROM MEMBERS ORDER BY member_id";
         List<Member> list = new ArrayList<>();
@@ -58,7 +56,6 @@ public class MemberDAO {
         return list;
     }
 
-    // READ (search by name, email, or contact number)
     public List<Member> searchMembers(String keyword) throws SQLException {
         String sql = "SELECT * FROM MEMBERS "
                    + "WHERE UPPER(first_name) LIKE ? OR UPPER(last_name) LIKE ? "
@@ -84,7 +81,6 @@ public class MemberDAO {
         return list;
     }
 
-    // UPDATE
     public void updateMember(Member m) throws SQLException {
         String sql = "UPDATE MEMBERS SET first_name = ?, last_name = ?, contact_no = ?, "
                    + "email = ?, address = ?, status = ? WHERE member_id = ?";
@@ -103,7 +99,6 @@ public class MemberDAO {
         }
     }
 
-    // DELETE
     public void deleteMember(int memberId) throws SQLException {
         String sql = "DELETE FROM MEMBERS WHERE member_id = ?";
 

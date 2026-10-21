@@ -52,11 +52,10 @@ public class ReportFrame extends JFrame {
         bottom.add(lblCount);
         add(bottom, BorderLayout.SOUTH);
 
-        // The report only runs when GENERATE is clicked (changing the dropdown clears the old result)
         btnGenerate.addActionListener(e -> generateReport());
         btnExport.addActionListener(e -> exportCsv());
         cmbReport.addActionListener(e -> clearResult());
-        BackBar.install(this);   // Back button bar at the top of the window
+        BackBar.install(this);
     }
 
     private void clearResult() {
@@ -97,7 +96,6 @@ public class ReportFrame extends JFrame {
         }
     }
 
-    // Saves the report currently shown in the table as a CSV file (opens in Excel)
     private void exportCsv() {
         JFileChooser chooser = new JFileChooser();
         String name = cmbReport.getSelectedItem().toString().replace(' ', '_')

@@ -11,7 +11,6 @@ import java.util.List;
 
 public class BookDAO {
 
-    // JOIN: shows the category name instead of only the category ID
     private static final String SELECT_WITH_CATEGORY =
         "SELECT b.book_id, b.category_id, c.category_name, b.isbn, b.title, "
       + "b.author, b.publisher, b.total_copies, b.available_copies, b.status "
@@ -33,7 +32,6 @@ public class BookDAO {
         );
     }
 
-    // CREATE
     public void addBook(Book b) throws SQLException {
         String sql = "INSERT INTO BOOKS (category_id, isbn, title, author, publisher, "
                    + "total_copies, available_copies, status) "
@@ -54,7 +52,6 @@ public class BookDAO {
         }
     }
 
-    // READ (all)
     public List<Book> getAllBooks() throws SQLException {
         String sql = SELECT_WITH_CATEGORY + "ORDER BY b.book_id";
         List<Book> list = new ArrayList<>();
@@ -70,7 +67,6 @@ public class BookDAO {
         return list;
     }
 
-    // READ (search by title, author, ISBN, or category name)
     public List<Book> searchBooks(String keyword) throws SQLException {
         String sql = SELECT_WITH_CATEGORY
                    + "WHERE UPPER(b.title) LIKE ? OR UPPER(b.author) LIKE ? "
@@ -96,7 +92,6 @@ public class BookDAO {
         return list;
     }
 
-    // UPDATE
     public void updateBook(Book b) throws SQLException {
         String sql = "UPDATE BOOKS SET category_id = ?, isbn = ?, title = ?, author = ?, "
                    + "publisher = ?, total_copies = ?, available_copies = ?, status = ? "
@@ -118,7 +113,6 @@ public class BookDAO {
         }
     }
 
-    // DELETE
     public void deleteBook(int bookId) throws SQLException {
         String sql = "DELETE FROM BOOKS WHERE book_id = ?";
 

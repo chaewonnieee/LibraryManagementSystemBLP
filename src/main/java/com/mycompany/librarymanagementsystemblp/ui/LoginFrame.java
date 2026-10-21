@@ -27,23 +27,20 @@ public class LoginFrame extends JFrame {
         Theme.applyWindowIcon(this);
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setPreferredSize(new Dimension(400, 500));   // exact size of the usable area
+        root.setPreferredSize(new Dimension(400, 500));
         root.add(buildHeader(), BorderLayout.NORTH);
         root.add(buildBody(), BorderLayout.CENTER);
         setContentPane(root);
         pack();
         setLocationRelativeTo(null);
 
-        // Pressing Enter triggers Login
         getRootPane().setDefaultButton(btnLogin);
 
-        // Button events
         btnLogin.addActionListener(e -> doLogin());
         btnClear.addActionListener(e -> clearFields());
         btnExit.addActionListener(e -> System.exit(0));
     }
 
-    // Dark band at the top: small logo, name, and the tagline pill
     private JPanel buildHeader() {
         JLabel lblLogo = new JLabel();
         ImageIcon logo = Theme.loadLogo(46);
@@ -73,12 +70,10 @@ public class LoginFrame extends JFrame {
         return header;
     }
 
-    // Cream area: big logo + titles, then the form, then the buttons
     private JPanel buildBody() {
         JPanel body = new JPanel(new BorderLayout());
         body.setBackground(Theme.CREAM);
 
-        // ----- brand block -----
         JLabel lblLogo = new JLabel();
         ImageIcon logo = Theme.loadLogo(100);
         if (logo != null) {
@@ -115,7 +110,6 @@ public class LoginFrame extends JFrame {
         brand.add(lblSlogan);
         body.add(brand, BorderLayout.NORTH);
 
-        // ----- form -----
         txtUsername = new JTextField(15);
         txtPassword = new JPasswordField(15);
         Theme.styleField(txtUsername);
@@ -129,11 +123,10 @@ public class LoginFrame extends JFrame {
 
         GridBagConstraints filler = new GridBagConstraints();
         filler.gridy = 2;
-        filler.weighty = 1.0;       // pushes the rows to the top
+        filler.weighty = 1.0;
         form.add(Box.createGlue(), filler);
         body.add(form, BorderLayout.CENTER);
 
-        // ----- buttons -----
         btnLogin = new JButton("LOGIN");
         btnClear = new JButton("CLEAR");
         btnExit = new JButton("EXIT");
@@ -180,7 +173,6 @@ public class LoginFrame extends JFrame {
         String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword());
 
-        // Validation
         if (username.isEmpty() || password.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "Please enter both username and password.",

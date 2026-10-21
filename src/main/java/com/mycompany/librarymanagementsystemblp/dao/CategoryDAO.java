@@ -11,7 +11,6 @@ import java.util.List;
 
 public class CategoryDAO {
 
-
     public void addCategory(Category c) throws SQLException {
         String sql = "INSERT INTO CATEGORIES (category_name, description) VALUES (?, ?)";
 
@@ -24,7 +23,6 @@ public class CategoryDAO {
         }
     }
 
-   
     public List<Category> getAllCategories() throws SQLException {
         String sql = "SELECT * FROM CATEGORIES ORDER BY category_id";
         List<Category> list = new ArrayList<>();
@@ -44,7 +42,6 @@ public class CategoryDAO {
         return list;
     }
 
-  
     public List<Category> searchCategories(String keyword) throws SQLException {
         String sql = "SELECT * FROM CATEGORIES "
                    + "WHERE UPPER(category_name) LIKE ? OR UPPER(description) LIKE ? "
@@ -71,7 +68,6 @@ public class CategoryDAO {
         return list;
     }
 
-
     public void updateCategory(Category c) throws SQLException {
         String sql = "UPDATE CATEGORIES SET category_name = ?, description = ? "
                    + "WHERE category_id = ?";
@@ -85,7 +81,6 @@ public class CategoryDAO {
             ps.executeUpdate();
         }
     }
-
 
     public void deleteCategory(int categoryId) throws SQLException {
         String sql = "DELETE FROM CATEGORIES WHERE category_id = ?";

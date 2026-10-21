@@ -118,7 +118,7 @@ public class ReservationFrame extends JFrame {
             chkPendingOnly.setSelected(false);
             refreshTable();
         });
-        BackBar.install(this);   // Back button bar at the top of the window
+        BackBar.install(this);
     }
 
     private void addField(JPanel panel, int row, int col, String label, JComponent comp) {
@@ -136,7 +136,6 @@ public class ReservationFrame extends JFrame {
         panel.add(comp, gbc);
     }
 
-    // ---------- Loading data ----------
     private void loadMembersAndBooks() {
         try {
             cmbMember.removeAllItems();
@@ -147,7 +146,7 @@ public class ReservationFrame extends JFrame {
             }
             cmbBook.removeAllItems();
             for (Book b : bookDAO.getAllBooks()) {
-                if (b.getAvailableCopies() == 0) {      // only add books with no copies on the shelf
+                if (b.getAvailableCopies() == 0) {
                     cmbBook.addItem(b);
                 }
             }
@@ -176,7 +175,6 @@ public class ReservationFrame extends JFrame {
         }
     }
 
-    // Fills the form when a table row is clicked
     private void loadSelectedRow() {
         int row = table.getSelectedRow();
         if (row < 0 || row >= currentReservations.size()) {
@@ -193,26 +191,25 @@ public class ReservationFrame extends JFrame {
             }
         }
 
-        cmbBook.setSelectedIndex(-1);                   // NEW: start with no book selected
+        cmbBook.setSelectedIndex(-1);
         for (int i = 0; i < cmbBook.getItemCount(); i++) {
             if (cmbBook.getItemAt(i).getBookId() == selectedReservation.getBookId()) {
-                cmbBook.setSelectedIndex(i);            // book is in the list, so select it
+                cmbBook.setSelectedIndex(i);
                 break;
             }
         }
     }
 
-    // ---------- Button actions ----------
     private void reserveBook() {
         Member member = (Member) cmbMember.getSelectedItem();
         Book book = (Book) cmbBook.getSelectedItem();
-        if (book == null) {                             // CHANGED: separate message when no book can be reserved
+        if (book == null) {
             JOptionPane.showMessageDialog(this,
                     "No books are available to reserve. Books can only be reserved when no copies are on the shelf.",
                     "Nothing to Reserve", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        if (member == null) {                           // CHANGED: separate message when no member is selected
+        if (member == null) {
             JOptionPane.showMessageDialog(this,
                     "Please select a member.",
                     "Missing Information", JOptionPane.WARNING_MESSAGE);

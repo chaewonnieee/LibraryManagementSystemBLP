@@ -12,7 +12,7 @@ import javax.swing.table.DefaultTableModel;
 public class UserFrame extends JFrame {
 
     private final UserDAO userDAO = new UserDAO();
-    private final User currentUser;   // the administrator who is logged in
+    private final User currentUser;
 
     private List<User> currentUsers = new ArrayList<>();
     private User selectedUser = null;
@@ -84,7 +84,6 @@ public class UserFrame extends JFrame {
         searchPanel.add(btnSearch);
         searchPanel.add(btnShowAll);
 
-        // The password is never shown in the table
         tableModel = new DefaultTableModel(
             new String[]{"ID", "Username", "Full Name", "Role", "Status"}, 0) {
             @Override
@@ -114,7 +113,7 @@ public class UserFrame extends JFrame {
             txtSearch.setText("");
             refreshTable();
         });
-        BackBar.install(this);   // Back button bar at the top of the window
+        BackBar.install(this);
     }
 
     private void addField(JPanel panel, int row, int col, String label, JComponent comp) {
@@ -191,7 +190,7 @@ public class UserFrame extends JFrame {
         if (u == null) {
             return;
         }
-        // An administrator must not lock themselves out
+
         if (selectedUser.getUserId() == currentUser.getUserId()
                 && ("Inactive".equals(u.getStatus()) || !"Administrator".equals(u.getRole()))) {
             showWarning("You cannot deactivate or demote the account you are logged in with.");
@@ -265,8 +264,6 @@ public class UserFrame extends JFrame {
         selectedUser = null;
     }
 
-    // Returns a User built from the form, or null if validation fails.
-    // A password is required for a new user but optional when updating.
     private User buildUserFromForm(boolean passwordRequired) {
         String username = txtUsername.getText().trim();
         String fullName = txtFullName.getText().trim();

@@ -7,13 +7,6 @@ import java.awt.event.MouseEvent;
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicButtonUI;
 
-/**
- * Gives a module window the Lumora look and a TUP-maroon "Back" button.
- * Usage (last line of a frame's initComponents):   BackBar.install(this);
- * - styles everything already in the window (see Theme.styleTree)
- * - adds a navy header with the Back button, the window title and the logo
- * Clicking Back closes that window, which returns the user to the Dashboard.
- */
 public final class BackBar {
 
     public static final Color TUP_MAROON = new Color(128, 0, 0);
@@ -26,14 +19,12 @@ public final class BackBar {
     public static void install(JFrame frame) {
         Container existingContent = frame.getContentPane();
 
-        // 1) theme everything that is already in the window
         Theme.styleTree(existingContent);
         if (existingContent instanceof JComponent) {
             ((JComponent) existingContent).setBorder(BorderFactory.createEmptyBorder(14, 18, 16, 18));
         }
         Theme.applyWindowIcon(frame);
 
-        // 2) navy header: Back button, title, logo
         JLabel lblTitle = new JLabel(String.valueOf(frame.getTitle()).toUpperCase(), SwingConstants.CENTER);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblTitle.setForeground(Color.WHITE);
@@ -49,7 +40,6 @@ public final class BackBar {
             BorderFactory.createLineBorder(new Color(255, 255, 255, 90)),
             BorderFactory.createEmptyBorder(5, 15, 5, 15)));
 
-        // the logo gets the same width as the Back button, so the title stays centered
         lblLogo.setHorizontalAlignment(SwingConstants.RIGHT);
         lblLogo.setPreferredSize(new Dimension(btnBack.getPreferredSize().width, 40));
 
@@ -69,7 +59,7 @@ public final class BackBar {
     public static JButton createBackButton(Runnable action) {
         JButton btn = new JButton("\u2190  Back");
         btn.putClientProperty(Theme.SKIP, Boolean.TRUE);
-        btn.setUI(new BasicButtonUI());          // flat, solid color on every look and feel
+        btn.setUI(new BasicButtonUI());
         btn.setOpaque(true);
         btn.setContentAreaFilled(true);
         btn.setBackground(TUP_MAROON);
@@ -78,7 +68,7 @@ public final class BackBar {
         btn.setBorder(BorderFactory.createEmptyBorder(6, 16, 6, 16));
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setMnemonic(KeyEvent.VK_B);          // Alt+B
+        btn.setMnemonic(KeyEvent.VK_B);
         btn.setToolTipText("Go back (Alt+B)");
 
         btn.addMouseListener(new MouseAdapter() {

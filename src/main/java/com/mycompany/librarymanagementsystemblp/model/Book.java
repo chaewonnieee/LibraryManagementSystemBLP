@@ -4,7 +4,7 @@ public class Book {
 
     private int bookId;
     private int categoryId;
-    private String categoryName;  
+    private String categoryName;
     private String isbn;
     private String title;
     private String author;
@@ -60,7 +60,7 @@ public class Book {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    
+
     @Override
     public String toString() {
         return title + " (" + isbn + ")";

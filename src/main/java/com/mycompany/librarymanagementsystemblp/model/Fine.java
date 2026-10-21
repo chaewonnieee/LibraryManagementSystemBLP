@@ -6,11 +6,11 @@ public class Fine {
 
     private int fineId;
     private int detailId;
-    private String memberName;   // filled in by a JOIN with MEMBERS
-    private String bookTitle;    // filled in by a JOIN with BOOKS
+    private String memberName;
+    private String bookTitle;
     private BigDecimal amount;
     private String fineDate;
-    private String status;       // Unpaid or Paid
+    private String status;
 
     public Fine() {
     }

@@ -12,7 +12,6 @@ import java.util.List;
 
 public class FineDAO {
 
-    // JOIN across 5 tables: fines + details + borrowings + members + books
     private static final String SELECT_FINES =
         "SELECT f.fine_id, f.detail_id, "
       + "m.last_name || ', ' || m.first_name AS member_name, "
@@ -35,8 +34,6 @@ public class FineDAO {
         );
     }
 
-    // READ: all fines, or only unpaid ones, filtered by member name or book title
-    // (Fines are created automatically by BorrowingDAO.returnBook when a book is late)
     public List<Fine> getFines(String keyword, boolean unpaidOnly) throws SQLException {
         String sql = SELECT_FINES
                    + "WHERE (UPPER(m.first_name) LIKE ? OR UPPER(m.last_name) LIKE ? "
@@ -62,7 +59,6 @@ public class FineDAO {
         return list;
     }
 
-    // UPDATE: the member paid the fine
     public void markAsPaid(int fineId) throws SQLException {
         String sql = "UPDATE FINES SET status = 'Paid' WHERE fine_id = ? AND status = 'Unpaid'";
 
@@ -76,7 +72,6 @@ public class FineDAO {
         }
     }
 
-    // Total of all unpaid fines (aggregate)
     public BigDecimal getTotalUnpaid() throws SQLException {
         String sql = "SELECT SUM(amount) FROM FINES WHERE status = 'Unpaid'";
 

@@ -108,7 +108,7 @@ public class MemberFrame extends JFrame {
             txtSearch.setText("");
             refreshTable();
         });
-        BackBar.install(this);   // Back button bar at the top of the window
+        BackBar.install(this);
     }
 
     private void addField(JPanel panel, int row, int col, String label, JComponent comp) {
@@ -252,7 +252,6 @@ public class MemberFrame extends JFrame {
         selectedMember = null;
     }
 
-    // Returns a Member built from the form, or null if validation fails
     private Member buildMemberFromForm() {
         String first = txtFirstName.getText().trim();
         String last = txtLastName.getText().trim();

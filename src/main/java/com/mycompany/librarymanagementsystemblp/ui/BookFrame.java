@@ -38,8 +38,6 @@ public class BookFrame extends JFrame {
         refreshTable();
     }
 
-    // ---------- Building the window ----------
-
     private void initComponents() {
         setTitle("Book Management");
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -49,7 +47,6 @@ public class BookFrame extends JFrame {
 
         txtBookId.setEditable(false);
 
-        // Form fields
         JPanel form = new JPanel(new GridBagLayout());
         addField(form, 0, 0, "Book ID:", txtBookId);
         addField(form, 0, 1, "Category:", cmbCategory);
@@ -60,7 +57,6 @@ public class BookFrame extends JFrame {
         addField(form, 3, 0, "Total Copies:", txtTotal);
         addField(form, 3, 1, "Status:", cmbStatus);
 
-        // CRUD buttons
         JButton btnSave = new JButton("SAVE");
         JButton btnUpdate = new JButton("UPDATE");
         JButton btnDelete = new JButton("DELETE");
@@ -77,7 +73,6 @@ public class BookFrame extends JFrame {
         top.add(buttons, BorderLayout.SOUTH);
         add(top, BorderLayout.NORTH);
 
-        // Search bar
         JButton btnSearch = new JButton("SEARCH");
         JButton btnShowAll = new JButton("SHOW ALL");
 
@@ -87,7 +82,6 @@ public class BookFrame extends JFrame {
         searchPanel.add(btnSearch);
         searchPanel.add(btnShowAll);
 
-        // Table
         tableModel = new DefaultTableModel(
             new String[]{"ID", "ISBN", "Title", "Author", "Category",
                          "Publisher", "Total", "Available", "Status"}, 0) {
@@ -109,7 +103,6 @@ public class BookFrame extends JFrame {
         center.add(new JScrollPane(table), BorderLayout.CENTER);
         add(center, BorderLayout.CENTER);
 
-        // Button events
         btnSave.addActionListener(e -> saveBook());
         btnUpdate.addActionListener(e -> updateBook());
         btnDelete.addActionListener(e -> deleteBook());
@@ -119,7 +112,7 @@ public class BookFrame extends JFrame {
             txtSearch.setText("");
             refreshTable();
         });
-        BackBar.install(this);   // Back button bar at the top of the window
+        BackBar.install(this);
     }
 
     private void addField(JPanel panel, int row, int col, String label, JComponent comp) {
@@ -136,8 +129,6 @@ public class BookFrame extends JFrame {
         gbc.weightx = 1.0;
         panel.add(comp, gbc);
     }
-
-    // ---------- Loading data ----------
 
     private void loadCategories() {
         try {
@@ -176,7 +167,6 @@ public class BookFrame extends JFrame {
         }
     }
 
-    // Fills the form when a table row is clicked
     private void loadSelectedRow() {
         int row = table.getSelectedRow();
         if (row < 0 || row >= currentBooks.size()) {
@@ -200,14 +190,12 @@ public class BookFrame extends JFrame {
         }
     }
 
-    // ---------- Button actions ----------
-
     private void saveBook() {
         Book b = buildBookFromForm();
         if (b == null) {
             return;
         }
-        b.setAvailableCopies(b.getTotalCopies());   // a new book starts fully available
+        b.setAvailableCopies(b.getTotalCopies());
 
         try {
             bookDAO.addBook(b);
@@ -231,7 +219,6 @@ public class BookFrame extends JFrame {
             return;
         }
 
-        // Keep the number of borrowed copies the same when the total changes
         int difference = b.getTotalCopies() - selectedBook.getTotalCopies();
         int newAvailable = selectedBook.getAvailableCopies() + difference;
         if (newAvailable < 0) {
@@ -309,9 +296,6 @@ public class BookFrame extends JFrame {
         selectedBook = null;
     }
 
-    // ---------- Validation and errors ----------
-
-    // Returns a Book built from the form, or null if validation fails
     private Book buildBookFromForm() {
         Category category = (Category) cmbCategory.getSelectedItem();
         String isbn = txtIsbn.getText().trim();

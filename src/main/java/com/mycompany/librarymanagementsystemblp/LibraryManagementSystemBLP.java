@@ -10,7 +10,6 @@ public class LibraryManagementSystemBLP {
     public static void main(String[] args) {
         DatabaseSetup.initialize();
 
-        // When the program closes (X, Exit, or Logout then close), shut Derby down cleanly
         Runtime.getRuntime().addShutdownHook(new Thread(DatabaseConnection::shutdown));
 
         SwingUtilities.invokeLater(() -> {

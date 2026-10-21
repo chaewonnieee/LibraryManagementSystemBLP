@@ -5,13 +5,13 @@ public class BorrowRecord {
     private int detailId;
     private int borrowId;
     private int memberId;
-    private String memberName;   // filled in by a JOIN with MEMBERS
+    private String memberName;
     private int bookId;
-    private String bookTitle;    // filled in by a JOIN with BOOKS
+    private String bookTitle;
     private String borrowDate;
     private String dueDate;
-    private String returnDate;   // null until the book is returned
-    private String status;       
+    private String returnDate;
+    private String status;
 
     public BorrowRecord() {
     }

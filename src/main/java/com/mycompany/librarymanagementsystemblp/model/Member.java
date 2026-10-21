@@ -50,7 +50,6 @@ public class Member {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    // Shows "Last, First" in dropdowns (used later by the Borrowing screen)
     @Override
     public String toString() {
         return lastName + ", " + firstName;

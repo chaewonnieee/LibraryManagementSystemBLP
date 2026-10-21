@@ -42,7 +42,6 @@ public class DashboardFrame extends JFrame {
         setMinimumSize(new Dimension(820, 560));
         setLocationRelativeTo(null);
 
-        // Refresh the numbers whenever the user comes back to the dashboard
         addWindowFocusListener(new WindowAdapter() {
             @Override
             public void windowGainedFocus(WindowEvent e) {
@@ -50,8 +49,6 @@ public class DashboardFrame extends JFrame {
             }
         });
     }
-
-    // ---------- Menu bar (same navy as the header, so they look like one piece) ----------
 
     private JMenuBar buildMenuBar() {
         JMenuItem miLogout = new JMenuItem("Logout");
@@ -71,8 +68,6 @@ public class DashboardFrame extends JFrame {
         menuBar.add(menuFile);
         return menuBar;
     }
-
-    // ---------- Header: brand on the left, user and logout on the right ----------
 
     private JPanel buildHeader() {
         JLabel lblLogo = new JLabel();
@@ -135,14 +130,11 @@ public class DashboardFrame extends JFrame {
         return header;
     }
 
-    // ---------- Body: overview cards + module buttons ----------
-
     private JPanel buildBody() {
         JPanel body = new JPanel(new BorderLayout(0, 22));
         body.setBackground(Theme.CREAM);
         body.setBorder(BorderFactory.createEmptyBorder(26, 36, 10, 36));
 
-        // Overview
         JButton btnRefresh = new JButton("REFRESH");
         Theme.styleRoundedButton(btnRefresh, Theme.GOLD, Theme.GOLD_HOVER, Theme.NAVY, 8);
         btnRefresh.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -164,7 +156,6 @@ public class DashboardFrame extends JFrame {
         overview.add(statsPanel, BorderLayout.CENTER);
         body.add(overview, BorderLayout.NORTH);
 
-        // Modules
         JPanel grid = new JPanel(new GridLayout(0, 4, 16, 16));
         grid.setOpaque(false);
         grid.add(moduleButton("Books", false, () -> openModule(new BookFrame())));
@@ -176,12 +167,11 @@ public class DashboardFrame extends JFrame {
         grid.add(moduleButton("Fines", false, () -> openModule(new FineFrame())));
         grid.add(moduleButton("Reports", false, () -> openModule(new ReportFrame())));
 
-        // Only administrators can manage system users
         if ("Administrator".equals(currentUser.getRole())) {
             grid.add(moduleButton("Users", true, () -> openModule(new UserFrame(currentUser))));
         }
 
-        JPanel gridHolder = new JPanel(new BorderLayout());   // keeps the buttons from stretching too tall
+        JPanel gridHolder = new JPanel(new BorderLayout());
         gridHolder.setOpaque(false);
         gridHolder.add(grid, BorderLayout.NORTH);
 
@@ -213,7 +203,6 @@ public class DashboardFrame extends JFrame {
         return label;
     }
 
-    // Navy tile for normal modules, gold tile for the administrator-only one
     private JButton moduleButton(String text, boolean highlight, Runnable action) {
         JButton btn = new JButton(text);
         if (highlight) {
@@ -227,8 +216,6 @@ public class DashboardFrame extends JFrame {
         return btn;
     }
 
-    // Shows one module at a time: the dashboard hides while a module is open
-    // and comes back when that module is closed (Back button or the window's X).
     private void openModule(JFrame module) {
         module.setLocationRelativeTo(this);
         module.addWindowListener(new WindowAdapter() {
@@ -248,8 +235,6 @@ public class DashboardFrame extends JFrame {
         new LoginFrame().setVisible(true);
     }
 
-    // ---------- Summary cards ----------
-
     private void loadStats() {
         statsPanel.removeAll();
         try {
@@ -267,7 +252,7 @@ public class DashboardFrame extends JFrame {
         boolean warning = title.equals("Overdue") && !value.equals("0");
 
         JLabel lblValue = new JLabel(value, SwingConstants.CENTER);
-        // long values such as "PHP 1,250.00" get a smaller font so they always fit
+
         lblValue.setFont(new Font("Segoe UI", Font.BOLD, value.length() > 7 ? 16 : 22));
         lblValue.setForeground(warning ? ALERT : Theme.NAVY);
 
