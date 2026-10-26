@@ -7,7 +7,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ReservationDAO {
 
@@ -53,8 +55,26 @@ public class ReservationDAO {
                     list.add(mapRow(rs));
                 }
             }
+            fillQueuePositions(conn, list);
         }
         return list;
+    }
+
+    private void fillQueuePositions(Connection conn, List<Reservation> list) throws SQLException {
+        Map<Integer, Integer> positionOf = new HashMap<>();
+        Map<Integer, Integer> waitingForBook = new HashMap<>();
+        String sql = "SELECT reservation_id, book_id FROM RESERVATIONS WHERE status = 'Pending' "
+                   + "ORDER BY reservation_date, reservation_id";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int place = waitingForBook.merge(rs.getInt("book_id"), 1, Integer::sum);
+                positionOf.put(rs.getInt("reservation_id"), place);
+            }
+        }
+        for (Reservation r : list) {
+            r.setQueuePosition(positionOf.getOrDefault(r.getReservationId(), 0));
+        }
     }
 
     public void addReservation(int memberId, int bookId) throws SQLException {
@@ -84,6 +104,21 @@ public class ReservationDAO {
                     if (rs.getInt("available_copies") > 0) {
                         throw new IllegalStateException(
                             "This book is available right now. Borrow it instead of reserving it.");
+                    }
+                }
+            }
+
+            String sqlHolding = "SELECT COUNT(*) FROM BORROWING_DETAILS d "
+                              + "INNER JOIN BORROWINGS br ON d.borrow_id = br.borrow_id "
+                              + "WHERE br.member_id = ? AND d.book_id = ? AND d.status = 'Borrowed'";
+            try (PreparedStatement ps = conn.prepareStatement(sqlHolding)) {
+                ps.setInt(1, memberId);
+                ps.setInt(2, bookId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    if (rs.getInt(1) > 0) {
+                        throw new IllegalStateException(
+                            "This member already has this book borrowed.");
                     }
                 }
             }

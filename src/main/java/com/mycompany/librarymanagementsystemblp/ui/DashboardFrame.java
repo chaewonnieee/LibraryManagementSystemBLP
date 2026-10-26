@@ -158,7 +158,7 @@ public class DashboardFrame extends JFrame {
 
         JPanel grid = new JPanel(new GridLayout(0, 4, 16, 16));
         grid.setOpaque(false);
-        grid.add(moduleButton("Books", false, () -> openModule(new BookFrame())));
+        grid.add(moduleButton("Books", false, () -> openModule(new BookFrame(currentUser))));
         grid.add(moduleButton("Categories", false, () -> openModule(new CategoryFrame())));
         grid.add(moduleButton("Members", false, () -> openModule(new MemberFrame())));
         grid.add(moduleButton("Borrow / Return", false,

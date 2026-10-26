@@ -241,7 +241,7 @@ public class BorrowingFrame extends JFrame {
             dueDate = LocalDate.parse(txtDueDate.getText().trim());
         } catch (DateTimeParseException ex) {
             showWarning("Due Date must use the format yyyy-MM-dd (example: "
-                      + LocalDate.now().plusDays(7) + ").");
+                      + LocalDate.now().plusDays(BorrowingDAO.DEFAULT_LOAN_DAYS) + ").");
             return;
         }
         if (dueDate.isBefore(LocalDate.now())) {
@@ -315,15 +315,27 @@ public class BorrowingFrame extends JFrame {
         }
 
         try {
-            BigDecimal fine = borrowingDAO.returnBook(selectedRecord.getDetailId());
+            BorrowingDAO.ReturnResult result =
+                borrowingDAO.returnBook(selectedRecord.getDetailId(), currentUser.getUserId());
+            BigDecimal fine = result.fine;
+            StringBuilder autoText = new StringBuilder();
+            if (!result.autoLoans.isEmpty()) {
+                autoText.append("\n\nReservations fulfilled automatically:");
+                for (BorrowingDAO.AutoLoan a : result.autoLoans) {
+                    autoText.append("\n- ").append(a.memberName).append(" borrowed \"")
+                            .append(a.bookTitle).append("\" (due ").append(a.dueDate).append(")");
+                }
+            }
             if (fine.compareTo(BigDecimal.ZERO) > 0) {
                 JOptionPane.showMessageDialog(this,
                     "Book returned LATE.\nA fine of PHP " + fine.setScale(2).toPlainString()
-                        + " was charged. You can collect it in the Fines screen.",
+                        + " was charged. You can collect it in the Fines screen."
+                        + autoText,
                     "Late Return", JOptionPane.WARNING_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "\"" + selectedRecord.getBookTitle() + "\" was returned on time. No fine.",
+                    "\"" + selectedRecord.getBookTitle() + "\" was returned on time. No fine."
+                        + autoText,
                     "Book Returned", JOptionPane.INFORMATION_MESSAGE);
             }
             loadMembersAndBooks();
@@ -350,7 +362,7 @@ public class BorrowingFrame extends JFrame {
     }
 
     private void resetDueDate() {
-        txtDueDate.setText(LocalDate.now().plusDays(7).toString());
+        txtDueDate.setText(LocalDate.now().plusDays(BorrowingDAO.DEFAULT_LOAN_DAYS).toString());
     }
 
     private void showWarning(String message) {

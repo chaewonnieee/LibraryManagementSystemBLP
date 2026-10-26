@@ -58,17 +58,15 @@ public class ReservationFrame extends JFrame {
         addField(form, 1, 1, "Book:", cmbBook);
 
         JButton btnReserve = new JButton("RESERVE");
-        JButton btnFulfill = new JButton("MARK FULFILLED");
         JButton btnCancel = new JButton("CANCEL RESERVATION");
         JButton btnClear = new JButton("CLEAR");
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         buttons.add(btnReserve);
-        buttons.add(btnFulfill);
         buttons.add(btnCancel);
         buttons.add(btnClear);
 
-        JLabel note = new JLabel("Only books with no copies on the shelf can be reserved.");
+        JLabel note = new JLabel("Reserve a book that is fully borrowed. When a copy comes back, the first member in line borrows it automatically.");
         note.setFont(note.getFont().deriveFont(Font.ITALIC));
         note.setBorder(BorderFactory.createEmptyBorder(5, 10, 0, 10));
 
@@ -89,7 +87,7 @@ public class ReservationFrame extends JFrame {
         searchPanel.add(btnShowAll);
 
         tableModel = new DefaultTableModel(
-                new String[]{"ID", "Member", "Book", "Date Reserved", "Status"}, 0) {
+                new String[]{"ID", "Member", "Book", "Date Reserved", "Queue", "Status"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -109,7 +107,6 @@ public class ReservationFrame extends JFrame {
         add(center, BorderLayout.CENTER);
 
         btnReserve.addActionListener(e -> reserveBook());
-        btnFulfill.addActionListener(e -> changeStatus("Fulfilled", "marked as fulfilled"));
         btnCancel.addActionListener(e -> changeStatus("Cancelled", "cancelled"));
         btnClear.addActionListener(e -> clearForm());
         btnSearch.addActionListener(e -> refreshTable());
@@ -164,7 +161,9 @@ public class ReservationFrame extends JFrame {
             for (Reservation r : currentReservations) {
                 tableModel.addRow(new Object[]{
                     r.getReservationId(), r.getMemberName(), r.getBookTitle(),
-                    r.getReservationDate(), r.getStatus()
+                    r.getReservationDate(),
+                    r.getQueuePosition() > 0 ? "#" + r.getQueuePosition() : "-",
+                    r.getStatus()
                 });
             }
             if (currentReservations.isEmpty() && !keyword.isEmpty()) {

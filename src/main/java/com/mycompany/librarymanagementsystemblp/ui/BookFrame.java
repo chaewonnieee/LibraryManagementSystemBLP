@@ -32,7 +32,10 @@ public class BookFrame extends JFrame {
     private DefaultTableModel tableModel;
     private JTable table;
 
-    public BookFrame() {
+    private final User currentUser;
+
+    public BookFrame(User user) {
+        this.currentUser = user;
         initComponents();
         loadCategories();
         refreshTable();
@@ -231,8 +234,16 @@ public class BookFrame extends JFrame {
         b.setAvailableCopies(newAvailable);
 
         try {
-            bookDAO.updateBook(b);
-            JOptionPane.showMessageDialog(this, "Book updated successfully.");
+            List<BorrowingDAO.AutoLoan> autoLoans = bookDAO.updateBook(b, currentUser.getUserId());
+            StringBuilder message = new StringBuilder("Book updated successfully.");
+            if (!autoLoans.isEmpty()) {
+                message.append("\n\nReservations fulfilled automatically:");
+                for (BorrowingDAO.AutoLoan a : autoLoans) {
+                    message.append("\n- ").append(a.memberName).append(" borrowed \"")
+                           .append(a.bookTitle).append("\" (due ").append(a.dueDate).append(")");
+                }
+            }
+            JOptionPane.showMessageDialog(this, message.toString());
             clearForm();
             refreshTable();
         } catch (SQLException ex) {

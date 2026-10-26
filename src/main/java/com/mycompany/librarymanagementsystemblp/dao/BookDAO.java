@@ -92,24 +92,34 @@ public class BookDAO {
         return list;
     }
 
-    public void updateBook(Book b) throws SQLException {
+    public List<BorrowingDAO.AutoLoan> updateBook(Book b, int userId) throws SQLException {
         String sql = "UPDATE BOOKS SET category_id = ?, isbn = ?, title = ?, author = ?, "
                    + "publisher = ?, total_copies = ?, available_copies = ?, status = ? "
                    + "WHERE book_id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, b.getCategoryId());
-            ps.setString(2, b.getIsbn());
-            ps.setString(3, b.getTitle());
-            ps.setString(4, b.getAuthor());
-            ps.setString(5, b.getPublisher());
-            ps.setInt(6, b.getTotalCopies());
-            ps.setInt(7, b.getAvailableCopies());
-            ps.setString(8, b.getStatus());
-            ps.setInt(9, b.getBookId());
-            ps.executeUpdate();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setInt(1, b.getCategoryId());
+                    ps.setString(2, b.getIsbn());
+                    ps.setString(3, b.getTitle());
+                    ps.setString(4, b.getAuthor());
+                    ps.setString(5, b.getPublisher());
+                    ps.setInt(6, b.getTotalCopies());
+                    ps.setInt(7, b.getAvailableCopies());
+                    ps.setString(8, b.getStatus());
+                    ps.setInt(9, b.getBookId());
+                    ps.executeUpdate();
+                }
+                List<BorrowingDAO.AutoLoan> loans =
+                    BorrowingDAO.fulfillWaitingReservations(conn, userId);
+                conn.commit();
+                return loans;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
         }
     }
 

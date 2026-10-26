@@ -9,6 +9,7 @@ public class Reservation {
     private String bookTitle;
     private String reservationDate;
     private String status;
+    private int queuePosition;
 
     public Reservation() {
     }
@@ -44,4 +45,7 @@ public class Reservation {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public int getQueuePosition() { return queuePosition; }
+    public void setQueuePosition(int queuePosition) { this.queuePosition = queuePosition; }
 }
